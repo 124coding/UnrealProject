@@ -1,0 +1,22 @@
+# Visual Studio files
+.vs/
+*.sln
+*.sdf
+*.opensdf
+*.suo
+*.VC.db
+*.VC.opendb
+
+# Unreal Engine generated files
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+*/Debug/
+*/x64/
+
+# Assets (Paid Content Exclusion)
+Content/Adventures_Pack/
+Content/Megaspikan/
+Content/Weapons/
