@@ -6,6 +6,15 @@
 #include "GameFramework/Actor.h"
 #include "BaseWeapon.generated.h"
 
+UENUM(BlueprintType)
+enum class EWeaponSlot : uint8 {
+	Primary		UMETA(DisplayName = "Primary Weapon"),
+	Secondary	UMETA(DisplayName = "Secondary Weapon"),
+	Melee		UMETA(DisplayName = "Melee Weapon"),
+	Throwable	UMETA(Display = "Throwable"),
+	MAX			UMETA(Hidden)
+};
+
 UCLASS()
 class UNREALPROJECT_API ABaseWeapon : public AActor
 {
@@ -15,8 +24,15 @@ public:
 	// Sets default values for this actor's properties
 	ABaseWeapon();
 
+	// Set Weapon Type in Blueprint
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Stat")
+	EWeaponSlot WeaponType;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	USoundBase* AttackSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UAnimMontage* FireAnimation;
 
 protected:
 	// Called when the game starts or when spawned
@@ -28,6 +44,13 @@ public:
 
 public:
 	virtual void Attack();
+
+	UStaticMeshComponent* GetWeaponMesh() {
+		return WeaponMesh;
+	}
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	class UInputMappingContext* WeaponMappingContext;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

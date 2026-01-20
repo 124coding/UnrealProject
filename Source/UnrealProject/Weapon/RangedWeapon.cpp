@@ -2,9 +2,41 @@
 
 
 #include "RangedWeapon.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ARangedWeapon::ARangedWeapon()
 {
+	PrimaryActorTick.bCanEverTick = true;
+}
+
+void ARangedWeapon::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 반동 처리가 필요할 때만 연산 (Target과 Current의 차이가 클 때)
+	if (!FMath::IsNearlyEqual(CurrentRecoilPitch, TargetRecoilPitch, 0.001f)) {
+		APawn* OwnerPawn = Cast<APawn>(GetOwner());
+		if (OwnerPawn) {
+			APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+			if (PC) {
+				// 보간(Interp)을 통해 이번 프레임에 도달해야 할 위치 계산
+				float NewRecoilPitch = FMath::FInterpTo(
+					CurrentRecoilPitch,
+					TargetRecoilPitch,
+					DeltaTime,
+					RecoilInterpSpeed
+				);
+
+				// 이번 프레임에 움직여야 할 양
+				float DeltaPitch = NewRecoilPitch - CurrentRecoilPitch;
+				
+				PC->AddPitchInput(DeltaPitch);
+
+				CurrentRecoilPitch = NewRecoilPitch;
+			}
+		}
+	}
 }
 
 void ARangedWeapon::Attack()
@@ -17,6 +49,54 @@ void ARangedWeapon::Attack()
 	ConsumeAmmo();
 
 	LastFireTime = GetWorld()->GetTimeSeconds();
+
+	APawn* OwnerPawn = Cast<APawn>(GetOwner());
+	if (OwnerPawn) {
+		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+		if (PC && FireCameraShakeClass) {
+			PC->ClientStartCameraShake(FireCameraShakeClass);
+
+			float RecoilAmount = -0.5f; // RecoilCurve 부재 시 기본값
+			float RecoilMultiplier = 1.0f; // 속도에 따른 에임 반동 패널티
+
+			if (RecoilCurve) {
+				RecoilAmount = RecoilCurve->GetFloatValue(BurstCount);
+			}
+
+			ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+			if (OwnerCharacter) {
+				float CurrentSpeed = OwnerCharacter->GetVelocity().Size();
+
+				if (OwnerCharacter->GetCharacterMovement()->IsFalling()) {
+					RecoilMultiplier = 3.0f;
+				}
+				else if (CurrentSpeed > 600.0f) {
+					RecoilMultiplier = 2.0f;
+				}
+				else if (CurrentSpeed > 400.0f) {
+					RecoilMultiplier = 1.5f;
+				}
+				else if (OwnerCharacter->bIsCrouched) {
+					RecoilMultiplier = 0.5f;
+				}
+			}
+
+			TargetRecoilPitch += (RecoilAmount * RecoilMultiplier);
+
+			// 랜덤 Yaw를 통한 좌우 반동
+			float RandomYaw = FMath::RandRange(-0.1f, 0.1f) * RecoilMultiplier;
+			PC->AddYawInput(RandomYaw);
+
+			BurstCount++;
+		}
+	}
+}
+
+void ARangedWeapon::StopAttack()
+{
+	BurstCount = 0;
+	TargetRecoilPitch = 0.0f;
+	CurrentRecoilPitch = 0.0f;
 }
 
 void ARangedWeapon::Reload()

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "BaseWeapon.h"
+#include "Camera/CameraShakeBase.h"
 #include "RangedWeapon.generated.h"
 
 /**
@@ -17,7 +18,14 @@ class UNREALPROJECT_API ARangedWeapon : public ABaseWeapon
 public:
 	ARangedWeapon();
 
+public:
+
+	virtual void Tick(float DeltaTime) override;
+	
+public:
 	virtual void Attack() override;
+
+	void StopAttack();
 
 	// 재장전
 	virtual void Reload();
@@ -50,6 +58,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadonly, Category = "RangedWeapon|FX")
 	class UParticleSystem* MuzzleFlashFX; // 나이아가라라면 UNiagaraSystem
 
+	// 카메라 쉐이크
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	TSubclassOf<class UCameraShakeBase> FireCameraShakeClass;
+
+	// Recoil Curve
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	class UCurveFloat* RecoilCurve;
+
+	// 반동이 얼마나 빠르게 적용될지
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float RecoilInterpSpeed = 15.0f;
 
 protected:
 	// 마지막으로 총을 쏜 시각
@@ -60,4 +79,13 @@ protected:
 
 	// 사거리
 	float AttackRange = 0.0f;
+
+	// 몇 발 연속 쏘고 있는지
+	int32 BurstCount = 0;
+
+	// 최종적으로 도달해야 할 반동 목표치
+	float TargetRecoilPitch = 0.0f;
+
+	// 현재 화면에 적용된 반동 수치 (Target을 천천히 따라감)
+	float CurrentRecoilPitch = 0.0f;
 };
