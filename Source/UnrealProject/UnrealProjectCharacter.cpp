@@ -55,6 +55,17 @@ void AUnrealProjectCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+
+	if (CrosshairWidgetClass && IsLocallyControlled()) // 내 캐릭터일 때만
+	{
+		CrosshairWidget = CreateWidget<UUserWidget>(PC, CrosshairWidgetClass);
+		if (CrosshairWidget)
+		{
+			CrosshairWidget->AddToViewport();
+		}
+	}
 }
 
 void AUnrealProjectCharacter::Tick(float DeltaTime) {

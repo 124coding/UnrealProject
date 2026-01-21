@@ -77,9 +77,6 @@ protected:
 	// 장전 중인지 여부
 	bool bIsReloading = false;
 
-	// 사거리
-	float AttackRange = 0.0f;
-
 	// 몇 발 연속 쏘고 있는지
 	int32 BurstCount = 0;
 

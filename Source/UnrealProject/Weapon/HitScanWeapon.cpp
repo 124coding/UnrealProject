@@ -8,6 +8,8 @@
 
 void AHitScanWeapon::Attack()
 {
+	if (!CanFire()) return;
+
 	Super::Attack();
 
 	// 주인이 없다면 중단
@@ -53,6 +55,7 @@ void AHitScanWeapon::Attack()
 		
 		if (HitActor) {
 			// 데미지를 받는 주체에게 데미지를 받았다고 메시지를 보냄.
+			UE_LOG(LogTemp, Warning, TEXT("HIT: %s"), *HitActor->GetName());
 			UGameplayStatics::ApplyDamage(
 				HitActor,
 				Damage,
@@ -72,6 +75,17 @@ void AHitScanWeapon::Attack()
 		}
 
 		if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, HitResult.Location);
+
+		DrawDebugLine(
+			GetWorld(),
+			Location, // 총구 위치(또는 Location)에서 시작
+			BeamEndPoint,       // 계산된 끝점까지
+			FColor::Red,        // 색상
+			false,              // 영구 표시 X
+			3.0f,               // 3초 동안 보임
+			0,
+			2.0f                // 선 두께
+		);
 
 		if (BeamParticles) {
 			// 이펙트를 총구에 부착해서 생성

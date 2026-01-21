@@ -44,6 +44,7 @@ void ARangedWeapon::Attack()
 	if (!CanFire()) {
 		return;
 	}
+
 	Super::Attack();
 
 	ConsumeAmmo();

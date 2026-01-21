@@ -62,4 +62,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponStat")
 	float AttackRate = 0.5f;
 
+	// »ç°Å¸®
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponStat")
+	float AttackRange = 5000.0f;
+
 };
