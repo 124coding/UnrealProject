@@ -41,6 +41,10 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 }
 
+void ABaseEnemy::MeleeAttack() {
+
+}
+
 void ABaseEnemy::HandleDeath()
 {
 	if (CurrentState == EEnemyState::EES_Dead) return;
