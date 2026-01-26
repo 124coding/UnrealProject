@@ -4,6 +4,7 @@
 #include "HitScanWeapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h" // 디버그 선 그리기
+#include "../HitInterface.h"
 #include "Particles/ParticleSystemComponent.h"
 
 void AHitScanWeapon::Attack()
@@ -63,6 +64,10 @@ void AHitScanWeapon::Attack()
 				this,
 				UDamageType::StaticClass()
 			);
+
+			if (HitActor->GetClass()->ImplementsInterface(UHitInterface::StaticClass())) {
+				IHitInterface::Execute_GetHit(HitActor, HitResult.ImpactPoint);
+			}
 		}
 
 		if (ImpactParticles) {

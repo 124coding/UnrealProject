@@ -19,7 +19,7 @@ public:
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
-	class UParticleSystem* ImpactParticles; // 벽/적에 맞았을 때 떠지는 이펙트 (나이아가라로 변경 가능)
+	class UParticleSystem* ImpactParticles; // 벽/적에 맞았을 때 뜨는 이펙트 (나이아가라로 변경 가능)
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
 	class USoundBase* ImpactSound; // 맞았을 때 나는 소리

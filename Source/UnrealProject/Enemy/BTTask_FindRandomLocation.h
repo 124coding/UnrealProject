@@ -4,25 +4,23 @@
 
 #include "CoreMinimal.h"
 #include "BehaviorTree/BTTaskNode.h"
-#include "BTTask_AttackMelee.generated.h"
+#include "BTTask_FindRandomLocation.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class UNREALPROJECT_API UBTTask_AttackMelee : public UBTTaskNode
+class UNREALPROJECT_API UBTTask_FindRandomLocation : public UBTTaskNode
 {
 	GENERATED_BODY()
-
+	
 public:
-	UBTTask_AttackMelee();
+	UBTTask_FindRandomLocation();
 
-	// 태스크 시작
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 
-	// 태스크 실행 중
-	virtual void TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
-	
 private:
-	bool bIsAttacking = false;
+	// 순찰 반경 거리
+	UPROPERTY(EditAnywhere, Category = "AI")
+	float SearchRadius = 1500.0f;
 };

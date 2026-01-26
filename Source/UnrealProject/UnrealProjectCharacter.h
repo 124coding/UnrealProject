@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
+#include "Component/AttributeComponent.h"
+#include "HitInterface.h"
 #include "UnrealProjectCharacter.generated.h"
 
 class UInputComponent;
@@ -20,7 +22,7 @@ struct FInputActionValue;
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
-class AUnrealProjectCharacter : public ACharacter
+class AUnrealProjectCharacter : public ACharacter, public IHitInterface
 {
 	GENERATED_BODY()
 
@@ -137,6 +139,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Animation")
 	bool IsWeaponEquipped() const;
 
+	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+
+	// 죽었을 때 실행할 함수
+	UFUNCTION()
+	void Death();
+
 private:
 	// 걷기 속도
 	float NormalWalkSpeed;
@@ -148,5 +156,9 @@ public:
 	// 달리기 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Movement: Walking", meta = (ClampMin = "0", UIMin = "0", ForceUnits = "cm/s"))
 	float SprintSpeed;
+
+	// 스탯 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UAttributeComponent* AttributeComponent;
 };
 

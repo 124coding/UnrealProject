@@ -41,6 +41,7 @@ AUnrealProjectCharacter::AUnrealProjectCharacter()
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComp"));
+	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComp"));
 
 	if (GetCharacterMovement()) {
 		NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
@@ -65,6 +66,10 @@ void AUnrealProjectCharacter::BeginPlay()
 		{
 			CrosshairWidget->AddToViewport();
 		}
+	}
+
+	if (AttributeComponent) {
+		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Death);
 	}
 }
 
@@ -152,6 +157,16 @@ void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 bool AUnrealProjectCharacter::IsWeaponEquipped() const
 {
 	return (CombatComponent && CombatComponent->GetCurrentWeapon() != nullptr);
+}
+
+void AUnrealProjectCharacter::GetHit_Implementation(const FVector& ImpactPoint)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Hit"));
+}
+
+void AUnrealProjectCharacter::Death()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Death"));
 }
 
 

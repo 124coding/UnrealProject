@@ -42,7 +42,19 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 }
 
 void ABaseEnemy::MeleeAttack() {
+	if (MeleeAttackMontage) {
+		PlayAnimMontage(MeleeAttackMontage);
+	}
+}
 
+bool ABaseEnemy::IsAttacking() const
+{
+	return GetMesh()->GetAnimInstance()->IsAnyMontagePlaying();
+}
+
+void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Enemy Hit"));
 }
 
 void ABaseEnemy::HandleDeath()

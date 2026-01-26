@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../Component/AttributeComponent.h"
+#include "../HitInterface.h"
 #include "BaseEnemy.generated.h"
 
 UENUM(BlueprintType)
@@ -19,7 +20,7 @@ enum class EEnemyState : uint8 {
 };
 
 UCLASS()
-class UNREALPROJECT_API ABaseEnemy : public ACharacter
+class UNREALPROJECT_API ABaseEnemy : public ACharacter, public IHitInterface
 {
 	GENERATED_BODY()
 
@@ -38,9 +39,15 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	// 근접공격
 	virtual void MeleeAttack();
 
+	// 공격 끝났는지 확인
+	bool IsAttacking() const;
+
 public:
+	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+
 	// 죽었을 때 실행할 함수
 	UFUNCTION()
 	void HandleDeath();
@@ -53,5 +60,8 @@ public:
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UAttributeComponent* AttributeComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	UAnimMontage* MeleeAttackMontage;
 
 };

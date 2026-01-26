@@ -11,6 +11,7 @@
 UBTTask_AttackMelee::UBTTask_AttackMelee()
 {
 	NodeName = TEXT("Attack");
+	bNotifyTick = true;
 }
 
 EBTNodeResult::Type UBTTask_AttackMelee::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
@@ -25,7 +26,25 @@ EBTNodeResult::Type UBTTask_AttackMelee::ExecuteTask(UBehaviorTreeComponent& Own
 
 	// 적에게 공격 명령 내리기
 	Enemy->MeleeAttack();
+	bIsAttacking = true;
 
-	// 명령 성공
-	return EBTNodeResult::Succeeded;
+	// 끝나지 않았다고 리턴
+	return EBTNodeResult::InProgress;
+}
+
+void UBTTask_AttackMelee::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
+{
+	Super::TickTask(OwnerComp, NodeMemory, DeltaSeconds);
+
+	// AI 컨트롤러 가져오기
+	AAIController* AIC = OwnerComp.GetAIOwner();
+	if (AIC == nullptr) return;
+
+	// 컨트롤러가 조종하는 폰(적 캐릭터) 가져오기
+	ABaseEnemy* Enemy = Cast<ABaseEnemy>(AIC->GetPawn());
+	if (Enemy == nullptr) return;
+
+	if (Enemy && !Enemy->IsAttacking()) {
+		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
+	}
 }
