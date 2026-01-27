@@ -148,6 +148,10 @@ public:
 
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 
+	// 누웠을 때 실행할 함수
+	UFUNCTION()
+	void Downed();
+
 	// 죽었을 때 실행할 함수
 	UFUNCTION()
 	void Death();

@@ -114,6 +114,8 @@ void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSi
 void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Hit"));
+
+	/*충돌 애니메이션 실행 등*/
 }
 
 void ABaseEnemy::HandleDeath()

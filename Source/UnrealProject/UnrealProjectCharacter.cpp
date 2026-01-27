@@ -71,8 +71,12 @@ void AUnrealProjectCharacter::BeginPlay()
 	}
 
 	if (AttributeComponent) {
-		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Death);
+		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Downed);
 	}
+
+	/*if (AttributeComponent) {
+		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Death);
+	}*/
 }
 
 void AUnrealProjectCharacter::Tick(float DeltaTime) {
@@ -166,9 +170,16 @@ void AUnrealProjectCharacter::GetHit_Implementation(const FVector& ImpactPoint)
 	UE_LOG(LogTemp, Warning, TEXT("Player Hit"));
 }
 
+void AUnrealProjectCharacter::Downed()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Downed"));
+	SetPlayerState(EPlayerState::EPS_Downed);
+}
+
 void AUnrealProjectCharacter::Death()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Death"));
+	SetPlayerState(EPlayerState::EPS_Dead);
 }
 
 void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
@@ -188,8 +199,6 @@ void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
 			TargetSpeed = NormalWalkSpeed;
 			break;
 	case EPlayerState::EPS_Downed:
-		UE_LOG(LogTemp, Warning, TEXT("Player Down"));
-
 		// 속도 변경
 		GetCharacterMovement()->MaxWalkSpeed = DownedSpeed;
 		TargetSpeed = DownedSpeed;
