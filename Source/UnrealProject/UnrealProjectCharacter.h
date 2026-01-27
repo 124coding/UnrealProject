@@ -21,6 +21,13 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+UENUM(BlueprintType)
+enum class EPlayerState : uint8 {
+	EPS_Normal UMETA(DisplayName = "Normal"), // 정상
+	EPS_Downed UMETA(DisplayName = "Downed"), // 기절
+	EPS_Dead UMETA(DisplayName = "Dead"), // 사망
+};
+
 UCLASS(config=Game)
 class AUnrealProjectCharacter : public ACharacter, public IHitInterface
 {
@@ -145,12 +152,32 @@ public:
 	UFUNCTION()
 	void Death();
 
+	// 상태 확인용
+	UFUNCTION(BlueprintPure, Category = "State")
+	bool IsDowned() const {
+		return CurrentState == EPlayerState::EPS_Downed;
+	}
+
+	UFUNCTION(BlueprintPure, Category = "State")
+	bool IsDead() const {
+		return CurrentState == EPlayerState::EPS_Dead;
+	}
+
 private:
 	// 걷기 속도
 	float NormalWalkSpeed;
+	float DownedSpeed;
 	
 	// 중간 보간을 위한 목표값
 	float TargetSpeed;
+
+protected:
+	// 현재 상태
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	EPlayerState CurrentState = EPlayerState::EPS_Normal;
+
+	// 상태 변경
+	void SetPlayerState(EPlayerState NewState);
 
 public:
 	// 달리기 속도

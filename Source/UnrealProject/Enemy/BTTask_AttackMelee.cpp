@@ -25,7 +25,7 @@ EBTNodeResult::Type UBTTask_AttackMelee::ExecuteTask(UBehaviorTreeComponent& Own
 	if (Enemy == nullptr) return EBTNodeResult::Failed;
 
 	// 적에게 공격 명령 내리기
-	Enemy->MeleeAttack();
+	Enemy->Attack();
 	bIsAttacking = true;
 
 	// 끝나지 않았다고 리턴
@@ -44,6 +44,7 @@ void UBTTask_AttackMelee::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* Nod
 	ABaseEnemy* Enemy = Cast<ABaseEnemy>(AIC->GetPawn());
 	if (Enemy == nullptr) return;
 
+	// 적의 공격이 끝났다면? 성공
 	if (Enemy && !Enemy->IsAttacking()) {
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}

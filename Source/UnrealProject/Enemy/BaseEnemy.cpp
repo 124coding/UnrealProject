@@ -4,6 +4,8 @@
 #include "BaseEnemy.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -41,15 +43,72 @@ void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent
 
 }
 
-void ABaseEnemy::MeleeAttack() {
-	if (MeleeAttackMontage) {
-		PlayAnimMontage(MeleeAttackMontage);
-	}
+void ABaseEnemy::Attack() {
+	UE_LOG(LogTemp, Log, TEXT("Enemy Attack"));
 }
 
 bool ABaseEnemy::IsAttacking() const
 {
-	return GetMesh()->GetAnimInstance()->IsAnyMontagePlaying();
+	USkeletalMeshComponent* MyMesh = GetMesh();
+	if (!MyMesh)
+	{
+		return false;
+	}
+
+	UAnimInstance* AnimInst = MyMesh->GetAnimInstance();
+	if (!AnimInst)
+	{
+		return false;
+	}
+
+	return AnimInst->IsAnyMontagePlaying();
+}
+
+void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount)
+{
+	// 트레이스 시작 위치
+	FVector Start = GetMesh()->GetSocketLocation(SocketName);
+	FVector End = Start + (GetActorForwardVector() * 20.0f);
+
+	// 충돌 대상 설정 (Pawn만 감지하도록)
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+
+	// 자기 자신은 무시 (추후에 모든 적에 대해서도 무시가 필요)
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+
+	FHitResult OutHit;
+
+	bool bResult = UKismetSystemLibrary::SphereTraceSingleForObjects(
+		GetWorld(),
+		Start,
+		End,
+		HalfRadiusSize,
+		ObjectTypes,
+		false,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration, // 디버그용(추후 None으로 변경)
+		OutHit,
+		true
+	);
+
+	if (bResult) {
+		AActor* HitActor = OutHit.GetActor();
+
+		// 플레이어인지 확인 후 데미지
+		if (HitActor) {
+			UGameplayStatics::ApplyDamage(
+				HitActor,
+				DamageAmount,
+				GetController(),
+				this,
+				UDamageType::StaticClass()
+			);
+		}
+
+		/*플레이어 피격 이펙트 / 소리 재생 인터페이스 호출 필요*/
+	}
 }
 
 void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)

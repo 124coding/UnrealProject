@@ -40,10 +40,14 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// 근접공격
-	virtual void MeleeAttack();
+	virtual void Attack();
 
 	// 공격 끝났는지 확인
 	bool IsAttacking() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount);
+
 
 public:
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
@@ -60,8 +64,5 @@ public:
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UAttributeComponent* AttributeComponent;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	UAnimMontage* MeleeAttackMontage;
 
 };

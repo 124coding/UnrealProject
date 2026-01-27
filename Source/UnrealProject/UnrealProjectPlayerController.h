@@ -15,13 +15,18 @@ UCLASS()
 class UNREALPROJECT_API AUnrealProjectPlayerController : public APlayerController
 {
 	GENERATED_BODY()
+
+public:
+	void ChangeInputContext(bool bIsDowned);
 	
 protected:
 
 	/** Input Mapping Context to be used for player input */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
-	UInputMappingContext* InputMappingContext;
+	UInputMappingContext* DefaultMappingContext;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputMappingContext* DownedMappingContext;
 	// Begin Actor interface
 protected:
 

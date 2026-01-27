@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "UnrealProjectCharacter.h"
+#include "UnrealProjectPlayerController.h"
 #include "UnrealProjectProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -45,6 +46,7 @@ AUnrealProjectCharacter::AUnrealProjectCharacter()
 
 	if (GetCharacterMovement()) {
 		NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+		DownedSpeed = 100.0f;
 		TargetSpeed = NormalWalkSpeed;
 		SprintSpeed = NormalWalkSpeed * 1.7f;
 		GetCharacterMovement()->GetNavAgentPropertiesRef().bCanCrouch = true;
@@ -167,6 +169,44 @@ void AUnrealProjectCharacter::GetHit_Implementation(const FVector& ImpactPoint)
 void AUnrealProjectCharacter::Death()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Death"));
+}
+
+void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
+{
+	if (CurrentState == NewState) return;
+
+	CurrentState = NewState;
+
+	if (AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(GetController())) {
+		PC->ChangeInputContext(CurrentState == EPlayerState::EPS_Downed);
+	}
+
+	switch (CurrentState) {
+	case EPlayerState::EPS_Normal:
+		// 정상 속도
+		GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
+			TargetSpeed = NormalWalkSpeed;
+			break;
+	case EPlayerState::EPS_Downed:
+		UE_LOG(LogTemp, Warning, TEXT("Player Down"));
+
+		// 속도 변경
+		GetCharacterMovement()->MaxWalkSpeed = DownedSpeed;
+		TargetSpeed = DownedSpeed;
+		GetCapsuleComponent()->SetCapsuleHalfHeight(40.0f);
+		break;
+	case EPlayerState::EPS_Dead:
+		// 모든 조작 차단
+		DisableInput(Cast<APlayerController>(GetController()));
+
+		// 랙돌(Ragdoll) 실행
+		GetMesh()->SetSimulatePhysics(true);
+		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		/*사망 알리는 델리게이트 필요*/
+		break;
+	}
 }
 
 
