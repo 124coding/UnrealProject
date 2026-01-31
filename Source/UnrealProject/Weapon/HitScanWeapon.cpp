@@ -89,7 +89,7 @@ void AHitScanWeapon::Attack()
 			false,              // 영구 표시 X
 			3.0f,               // 3초 동안 보임
 			0,
-			2.0f                // 선 두께
+			0.5f                // 선 두께
 		);
 
 		if (BeamParticles) {

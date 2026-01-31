@@ -6,7 +6,6 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
-#include "Component/AttributeComponent.h"
 #include "HitInterface.h"
 #include "UnrealProjectCharacter.generated.h"
 
@@ -15,6 +14,8 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class UCharacterMovementComponent;
 class UCombatComponent;
+class UAttributeComponent;
+class UDroneComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
@@ -40,10 +41,6 @@ class AUnrealProjectCharacter : public ACharacter, public IHitInterface
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
-
-	// 무기를 줍거나 버리는 등의 무기 상호작용 컴포넌트
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
-	UCombatComponent* CombatComponent;
 
 	// 사격 액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -84,6 +81,9 @@ class AUnrealProjectCharacter : public ACharacter, public IHitInterface
 	// 투척무기로 바꾸기 액션
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* EquipThrowableAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* DroneActiveSkillAction;
 
 	// 크로스헤어를 넣어줄 변수
 	UPROPERTY(EditAnywhere, Category = "UI")
@@ -148,6 +148,9 @@ public:
 
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 
+	UFUNCTION()
+	void Revive(float RevivePercent);
+
 	// 누웠을 때 실행할 함수
 	UFUNCTION()
 	void Downed();
@@ -188,8 +191,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Movement: Walking", meta = (ClampMin = "0", UIMin = "0", ForceUnits = "cm/s"))
 	float SprintSpeed;
 
+	// 무기를 줍거나 버리는 등의 무기 상호작용 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UCombatComponent* CombatComponent;
+
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	class UAttributeComponent* AttributeComponent;
+	UAttributeComponent* AttributeComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UDroneComponent* DroneComponent;
 };
 

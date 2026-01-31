@@ -5,6 +5,13 @@
 
 void AMeleeEnemy::Attack()
 {
+	if (CurrentState == EEnemyState::EES_Attacking || CurrentState == EEnemyState::EES_Dead)
+	{
+		return;
+	}
+
+	CurrentState = EEnemyState::EES_Attacking;
+
 	Super::Attack();
 
 	if (MeleeAttackMontages.Num() > 0) {
@@ -15,6 +22,16 @@ void AMeleeEnemy::Attack()
 
 		if (SelectedMontage) {
 			PlayAnimMontage(SelectedMontage);
+
+			//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+
+			//if (AnimInstance) {
+			//	// 기존에 예약이 있다면 제거(안전장치)
+			//	AnimInstance->OnMontageEnded.RemoveDynamic(this, &AMeleeEnemy::OnMontageEnded);
+
+			//	// 새 예약 걸기
+			//	AnimInstance->OnMontageEnded.AddDynamic(this, &AMeleeEnemy::OnMontageEnded);
+			//}
 		}
 
 	}

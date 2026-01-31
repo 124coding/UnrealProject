@@ -6,6 +6,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "AIController.h"
+#include "BrainComponent.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -26,6 +29,12 @@ void ABaseEnemy::BeginPlay()
 	if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &ABaseEnemy::HandleDeath);
 	}
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->OnMontageEnded.AddDynamic(this, &ABaseEnemy::OnMontageEnded);
+	}
 	
 }
 
@@ -36,32 +45,13 @@ void ABaseEnemy::Tick(float DeltaTime)
 
 }
 
-// Called to bind functionality to input
-void ABaseEnemy::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
-
 void ABaseEnemy::Attack() {
 	UE_LOG(LogTemp, Log, TEXT("Enemy Attack"));
 }
 
 bool ABaseEnemy::IsAttacking() const
 {
-	USkeletalMeshComponent* MyMesh = GetMesh();
-	if (!MyMesh)
-	{
-		return false;
-	}
-
-	UAnimInstance* AnimInst = MyMesh->GetAnimInstance();
-	if (!AnimInst)
-	{
-		return false;
-	}
-
-	return AnimInst->IsAnyMontagePlaying();
+	return CurrentState == EEnemyState::EES_Attacking;
 }
 
 void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount)
@@ -111,11 +101,113 @@ void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSi
 	}
 }
 
+void ABaseEnemy::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (bInterrupted)
+	{
+		return;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("EES_Normal"));
+	CurrentState = EEnemyState::EES_Normal;
+
+	if (AAIController* AIController = Cast<AAIController>(GetController())) {
+		if (UBrainComponent* Brain = AIController->GetBrainComponent())
+		{
+			Brain->StartLogic();
+		}
+	}
+
+	/* 다음 공격까지의 딜레이 주는 것도 가능*/
+}
+
+void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
+{
+	// 적의 정면 벡터
+	FVector Forward = GetActorForwardVector();
+
+	// 피격 지점 벡터(적의 위치 -> 때린 위치)
+	FVector ImpactLowered(ImpactPoint.X, ImpactPoint.Y, ImpactPoint.Z);
+	FVector ToHit = (ImpactLowered - GetActorLocation()).GetSafeNormal();
+
+	// 각도 구하기
+	// 0도: 정면, 180/-180도: 후면, 90도: 우측, -90도: 좌측
+	double CosTheta = FVector::DotProduct(Forward, ToHit);
+	double Theta = FMath::Acos(CosTheta);
+	Theta = FMath::RadiansToDegrees(Theta);
+
+	FVector CrossProduct = FVector::CrossProduct(Forward, ToHit);
+	if (CrossProduct.Z < 0) {
+		Theta *= -1.0f;
+	}
+
+	UAnimMontage* MontageToPlay = nullptr;
+
+	if (Theta >= -80.0f && Theta <= 80.0f) {
+		MontageToPlay = HitReactMontage_Front;
+		UE_LOG(LogTemp, Warning, TEXT("Front Hit"));
+	}
+	else if (Theta >= -100.0f && Theta < -80.0f) {
+		MontageToPlay = HitReactMontage_Left;
+		UE_LOG(LogTemp, Warning, TEXT("Left Hit"));
+	}
+	else if (Theta > 80.0f && Theta <= 100.0f) {
+		MontageToPlay = HitReactMontage_Right;
+		UE_LOG(LogTemp, Warning, TEXT("Right Hit"));
+	}
+	else {
+		MontageToPlay = HitReactMontage_Back;
+		UE_LOG(LogTemp, Warning, TEXT("Back Hit"));
+	}
+
+	// 몽타주 재생 시도 
+	float Duration = 0.0f;
+
+	if (MontageToPlay)
+	{
+		Duration = PlayAnimMontage(MontageToPlay);
+	}
+
+	if (Duration <= 0.0f)
+	{
+		// 바로 풀어주지 않으면 AI가 영원히 멈춤
+		UE_LOG(LogTemp, Error, TEXT("Montage Play Error"));
+
+		CurrentState = EEnemyState::EES_Normal;
+
+		if (AAIController* AIController = Cast<AAIController>(GetController()))
+		{
+			if (UBrainComponent* Brain = AIController->GetBrainComponent())
+			{
+				Brain->StartLogic(); // 즉시 재가동
+			}
+		}
+	}
+}
+
 void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Hit"));
 
-	/*충돌 애니메이션 실행 등*/
+	if(CurrentState == EEnemyState::EES_Dead) return;
+
+	CurrentState = EEnemyState::EES_Stunned;
+
+	if (AAIController* AIController = Cast<AAIController>(GetController())) {
+		if (UBrainComponent* Brain = AIController->GetBrainComponent())
+		{
+			Brain->StopLogic("Hit Reaction");
+		}
+	}
+
+	PlayDirectionalHitReact(ImpactPoint);
+
+	/*UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABaseEnemy::OnMontageEnded);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &ABaseEnemy::OnMontageEnded);
+	}*/
 }
 
 void ABaseEnemy::HandleDeath()

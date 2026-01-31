@@ -11,6 +11,8 @@ void AUnrealProjectPlayerController::ChangeInputContext(bool bIsDowned)
 	if (!Subsystem) return;
 
 	// 기존 매핑 지우기
+	// ClearAllMappings는 UI 입력 등 다른 필수 입력까지 지울 위험이 있으므로, 
+	// 특정 컨텍스트만 제거하는 방식을 사용하거나 상황에 맞춰 초기화할 필요성이 있음(현재는 코드의 구현 및 테스트를 용이하게 하기 위함)
 	Subsystem->ClearAllMappings();
 	
 	if (bIsDowned) {

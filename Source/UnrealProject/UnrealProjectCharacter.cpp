@@ -8,6 +8,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Component/CombatComponent.h"
+#include "Component/DroneComponent.h"
+#include "Component/AttributeComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
@@ -43,6 +45,7 @@ AUnrealProjectCharacter::AUnrealProjectCharacter()
 
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComp"));
 	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComp"));
+	DroneComponent = CreateDefaultSubobject<UDroneComponent>(TEXT("DroneComp"));
 
 	if (GetCharacterMovement()) {
 		NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
@@ -72,6 +75,11 @@ void AUnrealProjectCharacter::BeginPlay()
 
 	if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Downed);
+	}
+
+	if (DroneComponent)
+	{
+		DroneComponent->OnReviveComplete.AddDynamic(this, &AUnrealProjectCharacter::Revive);
 	}
 
 	/*if (AttributeComponent) {
@@ -153,6 +161,9 @@ void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		EnhancedInputComponent->BindAction(EquipSecondaryAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
 		EnhancedInputComponent->BindAction(EquipMeleeAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
 		EnhancedInputComponent->BindAction(EquipThrowableAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
+
+		// DroneAction
+		EnhancedInputComponent->BindAction(DroneActiveSkillAction, ETriggerEvent::Triggered, DroneComponent, &UDroneComponent::ActiveDroneSkill);
 	}
 	else
 	{
@@ -168,6 +179,19 @@ bool AUnrealProjectCharacter::IsWeaponEquipped() const
 void AUnrealProjectCharacter::GetHit_Implementation(const FVector& ImpactPoint)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Hit"));
+}
+
+void AUnrealProjectCharacter::Revive(float RevivePercent)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Player Revive"));
+	SetPlayerState(EPlayerState::EPS_Normal);
+
+	if (AttributeComponent) {
+		// 최대 체력의 일부만큼 회복
+		float ReviveAmount = AttributeComponent->GetMaxHealth() * (RevivePercent / 100.0f);
+
+		AttributeComponent->Heal(ReviveAmount);
+	}
 }
 
 void AUnrealProjectCharacter::Downed()
@@ -196,13 +220,21 @@ void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
 	case EPlayerState::EPS_Normal:
 		// 정상 속도
 		GetCharacterMovement()->MaxWalkSpeed = NormalWalkSpeed;
-			TargetSpeed = NormalWalkSpeed;
-			break;
+		TargetSpeed = NormalWalkSpeed;
+		GetCapsuleComponent()->SetCapsuleHalfHeight(96.0f);
+		break;
 	case EPlayerState::EPS_Downed:
 		// 속도 변경
 		GetCharacterMovement()->MaxWalkSpeed = DownedSpeed;
 		TargetSpeed = DownedSpeed;
 		GetCapsuleComponent()->SetCapsuleHalfHeight(40.0f);
+
+		if (DroneComponent) {
+			if (!DroneComponent->TryActivateRevive()) {
+				Death();
+			}
+		}
+
 		break;
 	case EPlayerState::EPS_Dead:
 		// 모든 조작 차단
@@ -212,6 +244,9 @@ void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
 		GetMesh()->SetSimulatePhysics(true);
 		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		GetMesh1P()->SetSimulatePhysics(true);
+		GetMesh1P()->SetCollisionProfileName(TEXT("Ragdoll"));
 
 		/*사망 알리는 델리게이트 필요*/
 		break;

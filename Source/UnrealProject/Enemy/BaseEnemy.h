@@ -10,11 +10,8 @@
 
 UENUM(BlueprintType)
 enum class EEnemyState : uint8 {
-	EES_Idle		UMETA(DisplayName = "Idle"),			// 평상시
-	EES_Patrolling  UMETA(DisplayName = "Patrolling"),		// 순찰 중
-	EES_Chasing		UMETA(DisplayName = "Chasing"),			// 추격 중
+	EES_Normal		UMETA(DisplayName = "Normal"),			// 평상시
 	EES_Attacking	UMETA(DisplayName = "Attacking"),		// 공격 중
-	EES_HitReact    UMETA(DisplayName = "HitReact"),		// 피격
 	EES_Stunned		UMETA(DisplayName = "Stunned"),			// 기절 
 	EES_Dead		UMETA(DisplayName = "Dead")				// 사망
 };
@@ -36,9 +33,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	// 근접공격
 	virtual void Attack();
 
@@ -48,6 +42,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount);
 
+protected:
+	// 공격 몽타주 끝났을때 호출
+	UFUNCTION()
+	virtual void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	// 방향 판별 함수 선언
+	void PlayDirectionalHitReact(const FVector& ImpactPoint);
 
 public:
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
@@ -56,10 +57,27 @@ public:
 	UFUNCTION()
 	void HandleDeath();
 
+protected:
+	// 앞에서 맞았을 때
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	UAnimMontage* HitReactMontage_Front;
+
+	// 뒤에서 맞았을 때
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	UAnimMontage* HitReactMontage_Back;
+
+	// 왼쪽 맞음
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	UAnimMontage* HitReactMontage_Left;
+
+	// 오른쪽 맞음
+	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	UAnimMontage* HitReactMontage_Right;
+
 public:
 	// 현재 상태
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enemy|State")
-	EEnemyState CurrentState = EEnemyState::EES_Idle;
+	EEnemyState CurrentState = EEnemyState::EES_Normal;
 
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

@@ -28,9 +28,14 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
+	float GetMaxHealth() const {
+		return MaxHealth;
+	}
+
 	float GetHealth() const{
 		return CurrentHealth;
 	}
+
 protected:
 
 	// 최대 체력
@@ -45,6 +50,14 @@ public:
 	// 데미지를 받는 함수 (OnTakeAny Damage 델리게이트와 모양이 똑같아야 연결 가능)
 	UFUNCTION()
 	void RecieveDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
+
+	// 최대 체력 증가
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void MaxHealthUp(float Amount);
+
+	// 회복 로직
+	UFUNCTION(BlueprintCallable, Category = "Health")
+	void Heal(float Amount);
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")

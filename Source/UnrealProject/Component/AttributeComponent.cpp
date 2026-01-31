@@ -56,3 +56,23 @@ void UAttributeComponent::RecieveDamage(AActor* DamagedActor, float Damage, cons
 	}
 }
 
+void UAttributeComponent::MaxHealthUp(float Amount)
+{
+	MaxHealth += Amount;
+
+	if (OnHealthChanged.IsBound()) {
+		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+	}
+}
+
+void UAttributeComponent::Heal(float Amount)
+{
+	CurrentHealth += Amount;
+
+	CurrentHealth = FMath::Clamp(CurrentHealth, 0.0f, MaxHealth);
+
+	if (OnHealthChanged.IsBound()) {
+		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+	}
+}
+
