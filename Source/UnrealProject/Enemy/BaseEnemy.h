@@ -55,7 +55,7 @@ public:
 
 	// 죽었을 때 실행할 함수
 	UFUNCTION()
-	void HandleDeath();
+	void HandleDeath(AActor* VictimActor, AActor* KillerActor);
 
 protected:
 	// 앞에서 맞았을 때

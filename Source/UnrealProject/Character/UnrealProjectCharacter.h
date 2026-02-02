@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
-#include "HitInterface.h"
+#include "../HitInterface.h"
 #include "UnrealProjectCharacter.generated.h"
 
 class UInputComponent;
@@ -21,6 +21,7 @@ class UInputMappingContext;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeathPlayer, AActor*, Victim, AActor*, Killer);
 
 UENUM(BlueprintType)
 enum class EPlayerState : uint8 {
@@ -132,6 +133,8 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	virtual void Landed(const FHitResult& Hit) override;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
@@ -153,11 +156,11 @@ public:
 
 	// 누웠을 때 실행할 함수
 	UFUNCTION()
-	void Downed();
+	void Downed(AActor* VictimActor, AActor* KillerActor);
 
 	// 죽었을 때 실행할 함수
 	UFUNCTION()
-	void Death();
+	void Death(AActor* KillerActor);
 
 	// 상태 확인용
 	UFUNCTION(BlueprintPure, Category = "State")
@@ -187,9 +190,16 @@ protected:
 	void SetPlayerState(EPlayerState NewState);
 
 public:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	bool bIsSprinting = false;
+
 	// 달리기 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Movement: Walking", meta = (ClampMin = "0", UIMin = "0", ForceUnits = "cm/s"))
 	float SprintSpeed;
+
+	// 착지 사운드
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Movement: Landed")
+	USoundBase* LandSound;
 
 	// 무기를 줍거나 버리는 등의 무기 상호작용 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -201,5 +211,8 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UDroneComponent* DroneComponent;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnDeathPlayer OnDeath;
 };
 

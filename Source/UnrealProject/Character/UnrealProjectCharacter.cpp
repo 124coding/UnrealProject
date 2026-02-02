@@ -2,19 +2,20 @@
 
 #include "UnrealProjectCharacter.h"
 #include "UnrealProjectPlayerController.h"
-#include "UnrealProjectProjectile.h"
+#include "../UnrealProjectProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Component/CombatComponent.h"
-#include "Component/DroneComponent.h"
-#include "Component/AttributeComponent.h"
+#include "../Component/CombatComponent.h"
+#include "../Component/DroneComponent.h"
+#include "../Component/AttributeComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -81,6 +82,8 @@ void AUnrealProjectCharacter::BeginPlay()
 	{
 		DroneComponent->OnReviveComplete.AddDynamic(this, &AUnrealProjectCharacter::Revive);
 	}
+
+	GetMesh()->HideBoneByName(TEXT("head"), PBO_None);
 
 	/*if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Death);
@@ -194,16 +197,36 @@ void AUnrealProjectCharacter::Revive(float RevivePercent)
 	}
 }
 
-void AUnrealProjectCharacter::Downed()
+void AUnrealProjectCharacter::Downed(AActor* VictimActor, AActor* KillerActor)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Downed"));
 	SetPlayerState(EPlayerState::EPS_Downed);
+
+	// 드론 부활 시도
+	if (DroneComponent) {
+		if (!DroneComponent->TryActivateRevive()) {
+			Death(KillerActor);
+		}
+	}
 }
 
-void AUnrealProjectCharacter::Death()
+void AUnrealProjectCharacter::Death(AActor* KillerActor)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Death"));
 	SetPlayerState(EPlayerState::EPS_Dead);
+
+	if (FirstPersonCameraComponent)
+	{
+		FirstPersonCameraComponent->AttachToComponent(
+			GetMesh(),
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+			TEXT("head") // 메쉬의 머리 뼈 이름 (보통 "head" 또는 "Head")
+		);
+	}
+
+	if (OnDeath.IsBound()) {
+		OnDeath.Broadcast(this, KillerActor);
+	}
 }
 
 void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
@@ -229,12 +252,6 @@ void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
 		TargetSpeed = DownedSpeed;
 		GetCapsuleComponent()->SetCapsuleHalfHeight(40.0f);
 
-		if (DroneComponent) {
-			if (!DroneComponent->TryActivateRevive()) {
-				Death();
-			}
-		}
-
 		break;
 	case EPlayerState::EPS_Dead:
 		// 모든 조작 차단
@@ -247,8 +264,6 @@ void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
 
 		GetMesh1P()->SetSimulatePhysics(true);
 		GetMesh1P()->SetCollisionProfileName(TEXT("Ragdoll"));
-
-		/*사망 알리는 델리게이트 필요*/
 		break;
 	}
 }
@@ -271,12 +286,14 @@ void AUnrealProjectCharacter::StartSprint()
 {
 	// Shift pressed 
 	TargetSpeed = SprintSpeed;
+	bIsSprinting = true;
 }
 
 void AUnrealProjectCharacter::StopSprint()
 {
 	// Shift released
 	TargetSpeed = NormalWalkSpeed;
+	bIsSprinting = false;
 }
 
 void AUnrealProjectCharacter::StartCrouch()
@@ -304,4 +321,18 @@ void AUnrealProjectCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void AUnrealProjectCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	// 떨어질때 속도 체크
+	float FallingSpeed = -GetVelocity().Z;
+
+	float VolumeMultiplier = FMath::Clamp(FallingSpeed / 1000.0f, 0.2f, 1.0f);
+
+	// 떨어진 높이만큼 소리 크게
+	UGameplayStatics::PlaySoundAtLocation(this, LandSound, GetActorLocation(), VolumeMultiplier);
+	MakeNoise(VolumeMultiplier, this, GetActorLocation());
 }

@@ -4,6 +4,9 @@
 #include "RangedWeapon.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 ARangedWeapon::ARangedWeapon()
 {
@@ -50,6 +53,18 @@ void ARangedWeapon::Attack()
 	ConsumeAmmo();
 
 	LastFireTime = GetWorld()->GetTimeSeconds();
+
+	if (MuzzleFlashFX) {
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			MuzzleFlashFX,
+			WeaponMesh,
+			MuzzleSocketName,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true
+		);
+	}
 
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (OwnerPawn) {
@@ -110,6 +125,10 @@ void ARangedWeapon::Reload()
 	bIsReloading = true;
 
 	UE_LOG(LogTemp, Log, TEXT("Reloading..."));
+
+	if (ReloadSound) {
+		UGameplayStatics::PlaySoundAtLocation(this, ReloadSound, GetActorLocation());
+	}
 
 	FTimerHandle ReloadTimerHandle;
 	GetWorldTimerManager().SetTimer(

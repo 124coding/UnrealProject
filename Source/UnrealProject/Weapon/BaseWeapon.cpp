@@ -2,7 +2,7 @@
 
 
 #include "BaseWeapon.h"
-#include "../UnrealProjectCharacter.h"
+#include "../Character/UnrealProjectCharacter.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -46,6 +46,9 @@ void ABaseWeapon::Attack()
 	if (AttackSound != nullptr)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
+
+		// 소리를 적들이 들을 수 있게 함
+		MakeNoise(1.0f, OwnerCharacter, GetActorLocation());
 	}
 
 	if (FireAnimation != nullptr) {

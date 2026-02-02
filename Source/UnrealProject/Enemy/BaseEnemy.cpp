@@ -210,7 +210,7 @@ void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	}*/
 }
 
-void ABaseEnemy::HandleDeath()
+void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 {
 	if (CurrentState == EEnemyState::EES_Dead) return;
 

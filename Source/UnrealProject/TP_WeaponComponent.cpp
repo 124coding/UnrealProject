@@ -2,7 +2,7 @@
 
 
 #include "TP_WeaponComponent.h"
-#include "UnrealProjectCharacter.h"
+#include "Character/UnrealProjectCharacter.h"
 #include "UnrealProjectProjectile.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"

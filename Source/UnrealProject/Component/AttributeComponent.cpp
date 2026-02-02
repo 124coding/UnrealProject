@@ -52,7 +52,18 @@ void UAttributeComponent::RecieveDamage(AActor* DamagedActor, float Damage, cons
 	// 체력이 0이 되면 죽었다고 알림
 	if (CurrentHealth <= 0.0f)
 	{
-		OnDeath.Broadcast();
+		AActor* KillerActor = nullptr;
+
+		if (InstigatedBy)
+		{
+			KillerActor = InstigatedBy->GetPawn();
+		}
+		else if (DamageCauser)
+		{
+			KillerActor = DamageCauser;
+		}
+
+		OnDeath.Broadcast(GetOwner(), KillerActor);
 	}
 }
 

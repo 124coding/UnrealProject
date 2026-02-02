@@ -2,7 +2,7 @@
 
 
 #include "CombatComponent.h"
-#include "../UnrealProjectCharacter.h"
+#include "../Character/UnrealProjectCharacter.h"
 #include "../Weapon/RangedWeapon.h"
 #include "GameFramework/Character.h"
 #include "EnhancedInputSubsystems.h"

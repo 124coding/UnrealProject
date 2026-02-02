@@ -7,7 +7,7 @@
 #include "AttributeComponent.generated.h"
 
 // 체력이 0이 되었을 때를 알리기 위한 델리게이트
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDeathSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeathSignature, AActor*, Victim, AActor*, Killer);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChangedSignature, float, CurrentHealth, float, MaxHealth);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )

@@ -39,6 +39,9 @@ protected:
 	void ConsumeAmmo();
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	USoundBase* ReloadSound;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "RangedWeapon|Ammo")
 	int32 MaxAmmoPerClip = 30;
 
@@ -56,7 +59,7 @@ protected:
 	FName MuzzleSocketName = TEXT("MuzzleSocket");
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadonly, Category = "RangedWeapon|FX")
-	class UParticleSystem* MuzzleFlashFX; // 나이아가라라면 UNiagaraSystem
+	class UNiagaraSystem* MuzzleFlashFX = nullptr; // 나이아가라라면 UNiagaraSystem
 
 	// 카메라 쉐이크
 	UPROPERTY(EditAnywhere, Category = "Combat")
