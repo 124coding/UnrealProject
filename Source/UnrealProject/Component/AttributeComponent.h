@@ -28,10 +28,12 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	float GetMaxHealth() const {
 		return MaxHealth;
 	}
 
+	UFUNCTION(BlueprintCallable)
 	float GetHealth() const{
 		return CurrentHealth;
 	}
