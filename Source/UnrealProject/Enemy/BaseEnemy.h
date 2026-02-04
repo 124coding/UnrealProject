@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "../Component/AttributeComponent.h"
 #include "../HitInterface.h"
+#include "../PoolableInterface.h"
 #include "BaseEnemy.generated.h"
 
 UENUM(BlueprintType)
@@ -17,7 +18,7 @@ enum class EEnemyState : uint8 {
 };
 
 UCLASS()
-class UNREALPROJECT_API ABaseEnemy : public ACharacter, public IHitInterface
+class UNREALPROJECT_API ABaseEnemy : public ACharacter, public IHitInterface, public IPoolableInterface
 {
 	GENERATED_BODY()
 
@@ -53,9 +54,15 @@ protected:
 public:
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
 
+	virtual void OnPoolSpawned_Implementation() override;
+	virtual void OnPoolReturned_Implementation() override;
+
 	// 죽었을 때 실행할 함수
 	UFUNCTION()
 	void HandleDeath(AActor* VictimActor, AActor* KillerActor);
+
+	// 풀로 돌아가는 함수
+	void Deactivate();
 
 protected:
 	// 앞에서 맞았을 때
@@ -82,5 +89,12 @@ public:
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UAttributeComponent* AttributeComponent;
+
+	// 풀링 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UObjectPoolComponent* OwningPoolComponent;
+
+	// 타이머핸들 (SetLifeSpan 대신 사용)
+	FTimerHandle ReturnTimerHandle;
 
 };

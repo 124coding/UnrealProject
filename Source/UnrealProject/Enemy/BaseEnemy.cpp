@@ -9,6 +9,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "../Component/ObjectPoolComponent.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -210,6 +211,65 @@ void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	}*/
 }
 
+void ABaseEnemy::OnPoolSpawned_Implementation()
+{
+	GetWorldTimerManager().ClearTimer(ReturnTimerHandle);
+
+	CurrentState = EEnemyState::EES_Normal;
+
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+
+	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh")); // 원래 프로필로 수정
+	GetMesh()->SetSimulatePhysics(false);
+
+	GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	//GetMesh()->SetRelativeLocationAndRotation(
+	//	FVector(0.f, 0.f, 0.f),
+	//	FRotator(0.f, 0.f, 0.f)
+	//);
+
+	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+	GetCharacterMovement()->Activate(); // 컴포넌트 활성화
+	GetCharacterMovement()->Velocity = FVector::ZeroVector;
+
+	if (AttributeComponent)
+	{
+		AttributeComponent->InitializeStats();
+	}
+
+	// AI 재가동
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (AIC)
+	{
+		AIC->GetBrainComponent()->RestartLogic(); // 비헤이비어 트리 재시작
+	}
+
+	// Actor 기본 활성화
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+}
+
+void ABaseEnemy::OnPoolReturned_Implementation()
+{
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
+
+	// AI 정지 시키기
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (AIC)
+	{
+		// BrainComponent(비헤이비어 트리)가 있다면 스톱
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->StopLogic("ReturnedToPool");
+		}
+	}
+}
+
 void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 {
 	if (CurrentState == EEnemyState::EES_Dead) return;
@@ -229,7 +289,22 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);
 
+	GetWorldTimerManager().SetTimer(ReturnTimerHandle, this, &ABaseEnemy::Deactivate, 5.0f, false);
+
 	// 5초 뒤에 삭제
-	SetLifeSpan(5.0f);
+	//SetLifeSpan(5.0f);
 }
 
+void ABaseEnemy::Deactivate()
+{
+	// 풀에게 돌려보내달라고 요청
+	if (OwningPoolComponent)
+	{
+		OwningPoolComponent->ReturnToPool(this);
+	}
+	else
+	{
+		// 만약 풀 없이 생성된 경우라면 그냥 파괴
+		Destroy();
+	}
+}

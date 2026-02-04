@@ -37,6 +37,16 @@ void UAttributeComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	// ...
 }
 
+void UAttributeComponent::InitializeStats()
+{
+	CurrentHealth = MaxHealth;
+
+	if (OnHealthChanged.IsBound())
+	{
+		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+	}
+}
+
 void UAttributeComponent::RecieveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
 	if (Damage <= 0.0f || CurrentHealth <= 0.0f) return;
