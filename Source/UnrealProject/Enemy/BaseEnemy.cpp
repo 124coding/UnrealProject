@@ -9,6 +9,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "AIController.h"
 #include "BrainComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "../Component/ObjectPoolComponent.h"
 
 // Sets default values
@@ -53,6 +54,15 @@ void ABaseEnemy::Attack() {
 bool ABaseEnemy::IsAttacking() const
 {
 	return CurrentState == EEnemyState::EES_Attacking;
+}
+
+void ABaseEnemy::SetCommandTarget(AActor* NewTarget)
+{
+	AAIController* AIC = Cast<AAIController>(GetController());
+
+	if (AIC && AIC->GetBlackboardComponent()) {
+		AIC->GetBlackboardComponent()->SetValueAsObject(TEXT("TargetActor"), NewTarget);
+	}
 }
 
 void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount)
@@ -215,24 +225,34 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 {
 	GetWorldTimerManager().ClearTimer(ReturnTimerHandle);
 
-	CurrentState = EEnemyState::EES_Normal;
+	// 물리 끄기
+	if (GetMesh()) {
+		GetMesh()->SetSimulatePhysics(false);
+		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
+		GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh")); // 원래 프로필로 수정
 
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-
-	GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh")); // 원래 프로필로 수정
-	GetMesh()->SetSimulatePhysics(false);
-
-	GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		if (GetCapsuleComponent()) {
+			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+			GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		}
+	}
 
 	//GetMesh()->SetRelativeLocationAndRotation(
 	//	FVector(0.f, 0.f, 0.f),
 	//	FRotator(0.f, 0.f, 0.f)
 	//);
 
-	GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
-	GetCharacterMovement()->Activate(); // 컴포넌트 활성화
-	GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->GravityScale = 1.0f; // 중력 복구
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		GetCharacterMovement()->Activate(); // 컴포넌트 활성화
+		GetCharacterMovement()->Velocity = FVector::ZeroVector;
+	}
+
+	CurrentState = EEnemyState::EES_Normal;
 
 	if (AttributeComponent)
 	{
@@ -254,9 +274,19 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 
 void ABaseEnemy::OnPoolReturned_Implementation()
 {
+	// 걸려있는 모든 타이머 취소 (공격 쿨타임, 사망 타이머 등)
+	GetWorldTimerManager().ClearAllTimersForObject(this);
+
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
+
+	// 물리 끄기
+	if (GetMesh())
+	{
+		GetMesh()->SetSimulatePhysics(false);
+		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector); // 관성 제거
+	}
 
 	// AI 정지 시키기
 	AAIController* AIC = Cast<AAIController>(GetController());
@@ -268,6 +298,18 @@ void ABaseEnemy::OnPoolReturned_Implementation()
 			Brain->StopLogic("ReturnedToPool");
 		}
 	}
+
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately(); // 이동 정지
+		GetCharacterMovement()->GravityScale = 0.0f; // 중력 끄기 (둥둥 뜨게)
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None); // 이동 모드 없음
+	}
+}
+
+void ABaseEnemy::SetOwningPool_Implementation(UObjectPoolComponent* NewPool)
+{
+	this->OwningPoolComponent = NewPool;
 }
 
 void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)

@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Component/ObjectPoolComponent.h"
 #include "SpawnVolume.h"
+#include "Enemy/BaseEnemy.h"
 
 AUnrealProjectGameMode::AUnrealProjectGameMode()
 	: Super()
@@ -103,7 +104,7 @@ void AUnrealProjectGameMode::RespawnPlayer(AController* Controller)
 	}
 }
 
-void AUnrealProjectGameMode::SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnCount, TSubclassOf<AActor> EnemyClassToSpawn)
+void AUnrealProjectGameMode::SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnCount, TSubclassOf<AActor> EnemyClassToSpawn, AActor* AttackTarget)
 {
 	// 해당 ID를 가진 볼륨들만 임시로 모으기
 	TArray<ASpawnVolume*> TargetVolumes;
@@ -123,7 +124,14 @@ void AUnrealProjectGameMode::SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnC
 		ASpawnVolume* SelectedVol = TargetVolumes[RandIndex];
 
 		FVector SpawnLoc = SelectedVol->GetRandomPointInVolume();
-		SpawnEnemyFromPool(EnemyClassToSpawn, SpawnLoc);
+		AActor* SpawnedActor = SpawnEnemyFromPool(EnemyClassToSpawn, SpawnLoc);
+
+		// 타겟이 지정되어 있으면 BaseEnemy의 타겟 지정 함수 실행
+		if (SpawnedActor && AttackTarget) {
+			if (ABaseEnemy* Enemy = Cast<ABaseEnemy>(SpawnedActor)) {
+				Enemy->SetCommandTarget(AttackTarget);
+			}
+		}
 	}
 }
 

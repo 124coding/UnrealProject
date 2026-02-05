@@ -79,10 +79,14 @@ AActor* UObjectPoolComponent::CreateNewObject() {
 
 	// 생성하자마자 비활성화
 	AActor* NewActor = World->SpawnActor<AActor>(PooledClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
 	if (NewActor) {
+
+
 		// 인터페이스가 있다면 비활성화 로직 실행
 		if (NewActor->Implements<UPoolableInterface>()) {
 			IPoolableInterface::Execute_OnPoolReturned(NewActor);
+			IPoolableInterface::Execute_SetOwningPool(NewActor, this);
 		}
 		else {
 			// 인터페이스 안 쓰면 기본적으로 숨김

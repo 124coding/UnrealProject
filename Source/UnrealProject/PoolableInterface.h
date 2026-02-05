@@ -31,4 +31,7 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ObjectPool")
 	void OnPoolReturned();
 	
+	// Pool에 넣는 함수
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Pool")
+	void SetOwningPool(UObjectPoolComponent* NewPool);
 };

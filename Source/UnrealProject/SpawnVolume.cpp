@@ -12,6 +12,14 @@ ASpawnVolume::ASpawnVolume()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+	SpawningBox = CreateDefaultSubobject<UBoxComponent>(TEXT("SpawningBox"));
+	RootComponent = SpawningBox;
+
+	// 박스 크기 초기값
+	SpawningBox->SetBoxExtent(FVector(100.0f, 100.0f, 100.0f));
+
+	// 게임에서 박스는 안보이게 (디버그용 false)
+	SpawningBox->SetHiddenInGame(false);
 }
 
 FVector ASpawnVolume::GetRandomPointInVolume()

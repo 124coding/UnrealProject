@@ -41,13 +41,14 @@ protected:
 	TArray<class ASpawnVolume*> AllSpawnVolumes;
 
 public:
+
 	// 외부에서 호출하는 통합 스폰 함수
 	UFUNCTION(BlueprintCallable)
 	AActor* SpawnEnemyFromPool(TSubclassOf<AActor> EnemyClass, FVector Location);
 
 	// 특정 그룹 ID에서 스폰시키는 함수
 	UFUNCTION(BlueprintCallable)
-	void SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnCount, TSubclassOf<AActor> EnemyClassToSpawn);
+	void SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnCount, TSubclassOf<AActor> EnemyClassToSpawn, AActor* AttackTarget = nullptr);
 };
 
 

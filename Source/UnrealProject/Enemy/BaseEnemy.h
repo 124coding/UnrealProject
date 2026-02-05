@@ -40,6 +40,10 @@ public:
 	// 공격 끝났는지 확인
 	bool IsAttacking() const;
 
+	// 강제로 타겟을 지정하는 함수
+	UFUNCTION(BlueprintCallable)
+	void SetCommandTarget(AActor* NewTarget);
+
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount);
 
@@ -56,6 +60,7 @@ public:
 
 	virtual void OnPoolSpawned_Implementation() override;
 	virtual void OnPoolReturned_Implementation() override;
+	virtual void SetOwningPool_Implementation(UObjectPoolComponent* NewPool) override;
 
 	// 죽었을 때 실행할 함수
 	UFUNCTION()
