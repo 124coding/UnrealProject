@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "UnrealProjectGameMode.h"
+#include "Character/UnrealProjectPlayerController.h"
 #include "Character/UnrealProjectCharacter.h"
 #include "UObject/ConstructorHelpers.h"
 #include "Kismet/GameplayStatics.h"
@@ -66,15 +67,31 @@ void AUnrealProjectGameMode::RestartPlayer(AController* NewPlayer)
 
 void AUnrealProjectGameMode::OnMyPawnDied(AActor* Victim, AActor* Killer)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Player Died! Respawning in 5 seconds..."));
+	// UE_LOG(LogTemp, Warning, TEXT("Player Died! Respawning in 5 seconds..."));
 
 	AController* VictimController = Cast<APawn>(Victim)->GetController();
+	if (!VictimController) {
+		return;
+	}
 
-	FTimerDelegate TimerDelegate;
+	if (AUnrealProjectPlayerController* PlayerController = Cast<AUnrealProjectPlayerController>(VictimController)) {
+
+		FTimerHandle TimerHandle;
+
+		GetWorld()->GetTimerManager().SetTimer(
+			TimerHandle,
+			PlayerController,
+			&AUnrealProjectPlayerController::ShowGameOverUI,
+			3.0f,
+			false
+		);
+	}
+
+	/*FTimerDelegate TimerDelegate;
 	TimerDelegate.BindUObject(this, &AUnrealProjectGameMode::RespawnPlayer, VictimController);
 
 	FTimerHandle TimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, 5.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, TimerDelegate, 5.0f, false);*/
 }
 
 void AUnrealProjectGameMode::RespawnPlayer(AController* Controller)
@@ -82,25 +99,25 @@ void AUnrealProjectGameMode::RespawnPlayer(AController* Controller)
 	if (Controller && Controller->IsPlayerController())
 	{
 		// 게임 재시작
-		UWorld* World = GetWorld();
-		if (World)
-		{
-			// 현재 레벨의 이름 가져오기
-			FName CurrentLevelName = FName(*World->GetName());
+		//UWorld* World = GetWorld();
+		//if (World)
+		//{
+		//	// 현재 레벨의 이름 가져오기
+		//	FName CurrentLevelName = FName(*World->GetName());
 
-			// 해당 레벨을 다시 열기
-			UGameplayStatics::OpenLevel(World, CurrentLevelName);
-		}
+		//	// 해당 레벨을 다시 열기
+		//	UGameplayStatics::OpenLevel(World, CurrentLevelName);
+		//}
 		
 		// 플레이어 리스폰
-		/*if(APawn* OldPawn = Controller->GetPawn())
+		if(APawn* OldPawn = Controller->GetPawn())
 		{
 			Controller->UnPossess();
 			OldPawn->Destroy(); 
 		}
 
 		UE_LOG(LogTemp, Log, TEXT("RESTART_GAME"));
-		RestartPlayer(Controller);*/
+		RestartPlayer(Controller);
 	}
 }
 

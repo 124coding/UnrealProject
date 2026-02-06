@@ -13,6 +13,13 @@ ARangedWeapon::ARangedWeapon()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
+void ARangedWeapon::BeginPlay()
+{
+	if (OnAmmoDelegate.IsBound()) {
+		OnAmmoDelegate.Broadcast(CurrentAmmoInClip);
+	}
+}
+
 void ARangedWeapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -144,6 +151,12 @@ void ARangedWeapon::FinishReload()
 {
 	bIsReloading = false; // 상태 해제
 	CurrentAmmoInClip = MaxAmmoPerClip; // 탄약 채움
+
+	if (OnAmmoDelegate.IsBound())
+	{
+		OnAmmoDelegate.Broadcast(CurrentAmmoInClip);
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("Reload Complete!"));
 }
 
@@ -175,5 +188,11 @@ bool ARangedWeapon::CanFire() const
 
 void ARangedWeapon::ConsumeAmmo()
 {
-	if (CurrentAmmoInClip > 0) CurrentAmmoInClip--;
+	if (CurrentAmmoInClip > 0) {
+		CurrentAmmoInClip--;
+
+		if (OnAmmoDelegate.IsBound()) {
+			OnAmmoDelegate.Broadcast(CurrentAmmoInClip);
+		}
+	}
 }

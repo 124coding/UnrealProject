@@ -65,14 +65,14 @@ void AUnrealProjectCharacter::BeginPlay()
 
 	APlayerController* PC = Cast<APlayerController>(GetController());
 
-	if (CrosshairWidgetClass && IsLocallyControlled()) // 내 캐릭터일 때만
-	{
-		CrosshairWidget = CreateWidget<UUserWidget>(PC, CrosshairWidgetClass);
-		if (CrosshairWidget)
-		{
-			CrosshairWidget->AddToViewport();
-		}
-	}
+	//if (CrosshairWidgetClass && IsLocallyControlled()) // 내 캐릭터일 때만
+	//{
+	//	CrosshairWidget = CreateWidget<UUserWidget>(PC, CrosshairWidgetClass);
+	//	if (CrosshairWidget)
+	//	{
+	//		CrosshairWidget->AddToViewport();
+	//	}
+	//}
 
 	if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Downed);
@@ -220,7 +220,7 @@ void AUnrealProjectCharacter::Death(AActor* KillerActor)
 		FirstPersonCameraComponent->AttachToComponent(
 			GetMesh(),
 			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
-			TEXT("head") // 메쉬의 머리 뼈 이름 (보통 "head" 또는 "Head")
+			TEXT("head") // 메쉬의 머리 뼈 이름
 		);
 	}
 

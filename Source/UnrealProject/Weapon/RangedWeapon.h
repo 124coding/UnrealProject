@@ -10,6 +10,9 @@
 /**
  * 
  */
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAmmo, int32, CurrentAmmo);
+
 UCLASS()
 class UNREALPROJECT_API ARangedWeapon : public ABaseWeapon
 {
@@ -19,7 +22,7 @@ public:
 	ARangedWeapon();
 
 public:
-
+	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	
 public:
@@ -88,4 +91,8 @@ protected:
 
 	// 현재 화면에 적용된 반동 수치 (Target을 천천히 따라감)
 	float CurrentRecoilPitch = 0.0f;
+
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnAmmo OnAmmoDelegate;
 };

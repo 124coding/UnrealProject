@@ -18,6 +18,9 @@ class UNREALPROJECT_API AUnrealProjectPlayerController : public APlayerControlle
 
 public:
 	void ChangeInputContext(bool bIsDowned);
+
+	// 게임 오버 UI 보여주는 함수
+	void ShowGameOverUI();
 	
 protected:
 
@@ -32,5 +35,11 @@ protected:
 
 	virtual void BeginPlay() override;
 
-	// End Actor interface
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "GameOver")
+	TSubclassOf<UUserWidget> GameOverWidgetClass;
+
+	UPROPERTY()
+	UUserWidget* GameOverWidget;
 };

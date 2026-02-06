@@ -86,13 +86,13 @@ class AUnrealProjectCharacter : public ACharacter, public IHitInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* DroneActiveSkillAction;
 
-	// 크로스헤어를 넣어줄 변수
-	UPROPERTY(EditAnywhere, Category = "UI")
-	TSubclassOf<class UUserWidget> CrosshairWidgetClass;
+	//// 크로스헤어를 넣어줄 변수
+	//UPROPERTY(EditAnywhere, Category = "UI")
+	//TSubclassOf<class UUserWidget> CrosshairWidgetClass;
 
-	// 생성된 위젯을 담아둘 변수
-	UPROPERTY()
-	class UUserWidget* CrosshairWidget;
+	//// 생성된 위젯을 담아둘 변수
+	//UPROPERTY()
+	//class UUserWidget* CrosshairWidget;
 	
 public:
 	AUnrealProjectCharacter();

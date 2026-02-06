@@ -38,6 +38,10 @@ void ABaseEnemy::BeginPlay()
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABaseEnemy::OnMontageEnded);
 	}
 	
+	if (GetMesh())
+	{
+		InitialMeshTransform = GetMesh()->GetRelativeTransform();
+	}
 }
 
 // Called every frame
@@ -230,6 +234,7 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 		GetMesh()->SetSimulatePhysics(false);
 		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+		GetMesh()->SetRelativeTransform(InitialMeshTransform);
 		GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh")); // 원래 프로필로 수정
 
 		if (GetCapsuleComponent()) {
@@ -237,12 +242,8 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 			GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		}
-	}
 
-	//GetMesh()->SetRelativeLocationAndRotation(
-	//	FVector(0.f, 0.f, 0.f),
-	//	FRotator(0.f, 0.f, 0.f)
-	//);
+	}
 
 	if (GetCharacterMovement())
 	{

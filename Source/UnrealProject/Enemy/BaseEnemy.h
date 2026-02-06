@@ -87,6 +87,10 @@ protected:
 	UAnimMontage* HitReactMontage_Right;
 
 public:
+	// 태어날 때의 메쉬 상태를 저장할 변수
+	UPROPERTY()
+	FTransform InitialMeshTransform;
+
 	// 현재 상태
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enemy|State")
 	EEnemyState CurrentState = EEnemyState::EES_Normal;

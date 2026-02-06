@@ -4,6 +4,7 @@
 #include "UnrealProjectPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
+#include "Blueprint/UserWidget.h"
 
 void AUnrealProjectPlayerController::ChangeInputContext(bool bIsDowned)
 {
@@ -20,6 +21,25 @@ void AUnrealProjectPlayerController::ChangeInputContext(bool bIsDowned)
 	}
 	else {
 		if (DefaultMappingContext) Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	}
+}
+
+void AUnrealProjectPlayerController::ShowGameOverUI()
+{
+	if (GameOverWidgetClass) {
+		GameOverWidget = CreateWidget<UUserWidget>(this, GameOverWidgetClass);
+		if (GameOverWidget) {
+			GameOverWidget->AddToViewport(10);	// Z-Order를 높게 줘서 HUD보다 위에 뜨게
+
+			// 마우스 커서 보이기
+			bShowMouseCursor = true;
+
+			// 입력 모드를 UI전용으로 변경
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(GameOverWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+		}
 	}
 }
 
