@@ -2,6 +2,7 @@
 
 #include "UnrealProjectCharacter.h"
 #include "UnrealProjectPlayerController.h"
+#include "../UnrealProject.h"
 #include "../UnrealProjectProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -16,6 +17,9 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+
+#include "DrawDebugHelpers.h"
+#include "../Interactable.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -167,6 +171,9 @@ void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 
 		// DroneAction
 		EnhancedInputComponent->BindAction(DroneActiveSkillAction, ETriggerEvent::Triggered, DroneComponent, &UDroneComponent::ActiveDroneSkill);
+
+		// InteractAction
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::TryInteract);
 	}
 	else
 	{
@@ -335,4 +342,57 @@ void AUnrealProjectCharacter::Landed(const FHitResult& Hit)
 	// 떨어진 높이만큼 소리 크게
 	UGameplayStatics::PlaySoundAtLocation(this, LandSound, GetActorLocation(), VolumeMultiplier);
 	MakeNoise(VolumeMultiplier, this, GetActorLocation());
+}
+
+void AUnrealProjectCharacter::TryInteract()
+{
+	if (!bCanInteract) return;
+
+	AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(GetController());
+	if (!PC) return;
+
+	// 시작점과 방향 구하기
+	FVector StartLocation;
+	FRotator ViewRotation;
+	PC->GetPlayerViewPoint(StartLocation, ViewRotation);
+
+	// 끝점 계산
+	FVector EndLocation = StartLocation + (ViewRotation.Vector() * InteractionDistance);
+
+	// 충돌 검사 설정
+	FHitResult HitResult;
+	FCollisionQueryParams TraceParams;
+	TraceParams.AddIgnoredActor(this); // 본인 무시
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		StartLocation,
+		EndLocation,
+		ECC_Interact,
+		TraceParams
+	);
+
+	// 디버그 라인
+	DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red);
+
+	if (bHit) {
+		AActor* HitActor = HitResult.GetActor();
+
+		if (HitActor && HitActor->Implements<UInteractable>()) {
+			IInteractable::Execute_Interact(HitActor, this);
+
+			bCanInteract = false;
+			
+			// 상호 작용에 1초 딜레이 주기
+			FTimerHandle WaitHandle;
+			GetWorld()->GetTimerManager().SetTimer(
+				WaitHandle,
+				FTimerDelegate::CreateLambda([&]() {
+					bCanInteract = true;
+					}), 1.0f, false
+			);
+
+			UE_LOG(LogTemp, Log, TEXT("Interact with: %s"), *HitActor->GetName());
+		}
+	}
 }

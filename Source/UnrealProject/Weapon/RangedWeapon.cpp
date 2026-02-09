@@ -15,9 +15,7 @@ ARangedWeapon::ARangedWeapon()
 
 void ARangedWeapon::BeginPlay()
 {
-	if (OnAmmoDelegate.IsBound()) {
-		OnAmmoDelegate.Broadcast(CurrentAmmoInClip);
-	}
+	Super::BeginPlay();
 }
 
 void ARangedWeapon::Tick(float DeltaTime)
@@ -49,13 +47,9 @@ void ARangedWeapon::Tick(float DeltaTime)
 	}
 }
 
-void ARangedWeapon::Attack()
+void ARangedWeapon::OnAttack()
 {
-	if (!CanFire()) {
-		return;
-	}
-
-	Super::Attack();
+	Super::OnAttack();
 
 	ConsumeAmmo();
 
@@ -106,7 +100,7 @@ void ARangedWeapon::Attack()
 
 			TargetRecoilPitch += (RecoilAmount * RecoilMultiplier);
 
-			// 랜덤 Yaw를 통한 좌우 반동
+			// 랜덤 Yaw를 통한 좌우 반동 (이것도 따로 그래프를 둘 수 있음)
 			float RandomYaw = FMath::RandRange(-0.1f, 0.1f) * RecoilMultiplier;
 			PC->AddYawInput(RandomYaw);
 
@@ -160,8 +154,11 @@ void ARangedWeapon::FinishReload()
 	UE_LOG(LogTemp, Log, TEXT("Reload Complete!"));
 }
 
-bool ARangedWeapon::CanFire() const
+bool ARangedWeapon::CanAttack()
 {
+	bool bBaseCan = Super::CanAttack();
+	if (!bBaseCan) return false;
+
 	// 재장전중
 	if (bIsReloading)
 	{

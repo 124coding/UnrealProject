@@ -7,6 +7,8 @@
 #include "../Weapon/BaseWeapon.h"
 #include "CombatComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCurrentWeaponChangedDelegate, class ABaseWeapon*, NewWeapon);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UNREALPROJECT_API UCombatComponent : public UActorComponent
 {
@@ -19,6 +21,9 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	// 무기를 안전한 위치에 떨어뜨리는 내부 함수
+	void DropWeaponSafeLocation(class ABaseWeapon* WeaponToDrop);
 
 public:	
 	// Called every frame
@@ -56,4 +61,8 @@ protected:
 	TSubclassOf<class ABaseWeapon> DefaultWeaponClass;
 
 	void AttachWeaponToHand(ABaseWeapon* Weapon);
+
+public:
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnCurrentWeaponChangedDelegate OnCurrentWeaponChanged;
 };

@@ -26,7 +26,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	
 public:
-	virtual void Attack() override;
+	virtual void OnAttack() override;
 
 	void StopAttack();
 
@@ -34,9 +34,13 @@ public:
 	virtual void Reload();
 	void FinishReload();
 
+	int32 GetCurrentAmmoInClip() {
+		return CurrentAmmoInClip;
+	}
+
 protected:
 	// 발사 가능 여부
-	bool CanFire() const;
+	virtual bool CanAttack() override;
 	
 	// 총알 줄이는 함수
 	void ConsumeAmmo();

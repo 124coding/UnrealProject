@@ -24,7 +24,7 @@ void UCombatComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// 테스트용 기본 무기 생성
-	if (DefaultWeaponClass) {
+	/*if (DefaultWeaponClass) {
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.Owner = GetOwner();
 
@@ -39,10 +39,69 @@ void UCombatComponent::BeginPlay()
 		{
 			PickupWeapon(SpawnedWeapon);
 		}
-	}
+	}*/
 
 	// ...
 	
+}
+
+void UCombatComponent::DropWeaponSafeLocation(ABaseWeapon* WeaponToDrop)
+{
+	if (!WeaponToDrop) return;
+
+	AUnrealProjectCharacter* PlayerChar = Cast<AUnrealProjectCharacter>(GetOwner());
+	if (!PlayerChar || !PlayerChar->GetController()) return;
+
+	// 카메라 위치와 시선
+	FVector Location;
+	FRotator Rotation;
+	PlayerChar->GetController()->GetPlayerViewPoint(Location, Rotation);
+
+	// 떨어뜨릴 목표 지점 계산
+	float DropDistance = 150.0f;
+	FVector TraceStart = Location;
+	FVector TraceEnd = Location + (Rotation.Vector() * DropDistance);
+
+	// 벽 뚫기 방지
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(PlayerChar);
+	QueryParams.AddIgnoredActor(WeaponToDrop);
+
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
+		ECC_Visibility,
+		QueryParams
+	);
+
+	// 최종 위치 결정
+	FVector FinalLocation;
+
+	if (bHit) {
+		// 벽에 막혔으면 벽보다 살짝 앞으로
+		// 벽이랑 너무 가까우면(30cm 이내) 그냥 내 발밑에 떨굼
+		if (HitResult.Distance < 30.0f)
+		{
+			// 그냥 캡슐(발) 위치에서 살짝 앞으로
+			FinalLocation = PlayerChar->GetActorLocation() + (PlayerChar->GetActorForwardVector() * 20.0f);
+		}
+		else
+		{
+			// 충분히 머니까 벽 앞에서 10cm 띄움
+			FinalLocation = HitResult.Location - (Rotation.Vector() * 10.0f);
+		}
+	}
+	else {
+		FinalLocation = TraceEnd;
+	}
+
+	FRotator DropRotation = FRotator(0.0f, Rotation.Yaw, 0.0f);
+
+	WeaponToDrop->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+	WeaponToDrop->SetActorLocation(FinalLocation);
+	WeaponToDrop->SetActorRotation(DropRotation);
 }
 
 
@@ -57,6 +116,9 @@ void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 void UCombatComponent::PickupWeapon(ABaseWeapon* NewWeapon)
 {
 	if (NewWeapon == nullptr) return;
+	
+	NewWeapon->SetWeaponState(EWeaponState::Equipped);
+	NewWeapon->SetOwner(GetOwner());
 
 	EWeaponSlot Slot = NewWeapon->WeaponType;
 
@@ -64,24 +126,30 @@ void UCombatComponent::PickupWeapon(ABaseWeapon* NewWeapon)
 	if (CarriedWeapons.Contains(Slot)) {
 		ABaseWeapon* OldWeapon = CarriedWeapons[Slot];
 
+		if (CurrentWeapon == OldWeapon) CurrentWeapon = nullptr;
+
 		if (OldWeapon) {
-			OldWeapon->Destroy(); // 일단 제거
-			// DropWeapon(OldWeapon);	 /* 떨어뜨리는 로직 필요 */
+			OldWeapon->SetOwner(nullptr);
+			OldWeapon->SetWeaponState(EWeaponState::Dropped);
+			DropWeaponSafeLocation(OldWeapon);
 		}
 	}
 
+	// 무기 등록
 	CarriedWeapons.Add(Slot, NewWeapon);
-	NewWeapon->SetOwner(GetOwner());
+
+	// 바로 장착
+	EquipWeaponBySlot(Slot);
 
 	// 현재 들고 있는 무기가 없으면 바로 장착
-	if (CurrentWeapon == nullptr) {
-		EquipWeaponBySlot(Slot);
-	}
-	else {
-		// 당장 사용하지 않을 시 숨김
-		NewWeapon->SetActorHiddenInGame(true);
-		NewWeapon->SetActorEnableCollision(false);
-	}
+	//if (CurrentWeapon == nullptr) {
+	//	EquipWeaponBySlot(Slot);
+	//}
+	//else {
+	//	// 당장 사용하지 않을 시 숨김
+	//	NewWeapon->SetActorHiddenInGame(true);
+	//	NewWeapon->SetActorEnableCollision(false);
+	//}
 }
 
 void UCombatComponent::EquipWeaponBySlot(EWeaponSlot SlotToEquip)
@@ -116,21 +184,28 @@ void UCombatComponent::EquipWeaponBySlot(EWeaponSlot SlotToEquip)
 	CurrentWeapon = WeaponToEquip;
 	CurrentWeapon->SetActorHiddenInGame(false);
 
+	if (OnCurrentWeaponChanged.IsBound()) {
+		OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
+	}
+
 	AttachWeaponToHand(CurrentWeapon);
 }
 
 void UCombatComponent::AttachWeaponToHand(ABaseWeapon* Weapon)
 {
+	if (!Weapon || !GetOwner()) return;
+
 	AUnrealProjectCharacter* Owner = Cast<AUnrealProjectCharacter>(GetOwner());
 	if (Owner && Weapon) {
-		Weapon->GetWeaponMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 		Weapon->AttachToComponent(
 			Owner->GetMesh1P(),
-			AttachmentRules,
+			FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 			TEXT("GripPoint") /* 캐릭터 메쉬의 손 소켓 이름 */
 		);
 	}
+
+	Weapon->SetActorRelativeLocation(FVector::ZeroVector);
+	Weapon->SetActorRelativeRotation(FRotator::ZeroRotator);
 }
 
 void UCombatComponent::Attack() {

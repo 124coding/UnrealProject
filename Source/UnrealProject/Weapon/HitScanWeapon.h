@@ -15,7 +15,8 @@ class UNREALPROJECT_API AHitScanWeapon : public ARangedWeapon
 	GENERATED_BODY()
 	
 public:
-	virtual void Attack() override;
+	virtual void BeginPlay() override;
+	virtual void OnAttack() override;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")

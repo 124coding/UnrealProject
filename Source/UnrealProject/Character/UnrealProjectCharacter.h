@@ -86,6 +86,9 @@ class AUnrealProjectCharacter : public ACharacter, public IHitInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* DroneActiveSkillAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* InteractAction;
+
 	//// 크로스헤어를 넣어줄 변수
 	//UPROPERTY(EditAnywhere, Category = "UI")
 	//TSubclassOf<class UUserWidget> CrosshairWidgetClass;
@@ -173,6 +176,13 @@ public:
 		return CurrentState == EPlayerState::EPS_Dead;
 	}
 
+public:
+	void TryInteract();
+
+protected:
+	// 상태 변경
+	void SetPlayerState(EPlayerState NewState);
+
 private:
 	// 걷기 속도
 	float NormalWalkSpeed;
@@ -186,8 +196,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 	EPlayerState CurrentState = EPlayerState::EPS_Normal;
 
-	// 상태 변경
-	void SetPlayerState(EPlayerState NewState);
+	// 상호작용 쿨타임 확인
+	bool bCanInteract = true;
+
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -214,5 +225,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnDeathPlayer OnDeath;
+
+	// 상호작용 거리
+	UPROPERTY(EditAnywhere, Category = "Interaction")
+	float InteractionDistance = 200.0f;
 };
 

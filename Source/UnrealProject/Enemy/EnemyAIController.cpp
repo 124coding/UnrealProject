@@ -6,6 +6,13 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
+#include "Navigation/CrowdFollowingComponent.h"
+
+AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
+{
+	// 군중 회피 관련 설정 가능
+}
 
 void AEnemyAIController::OnPossess(APawn* InPawn)
 {

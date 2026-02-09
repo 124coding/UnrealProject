@@ -7,11 +7,14 @@
 #include "../HitInterface.h"
 #include "Particles/ParticleSystemComponent.h"
 
-void AHitScanWeapon::Attack()
+void AHitScanWeapon::BeginPlay()
 {
-	if (!CanFire()) return;
+	Super::BeginPlay();
+}
 
-	Super::Attack();
+void AHitScanWeapon::OnAttack()
+{
+	Super::OnAttack();
 
 	// 주인이 없다면 중단
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());

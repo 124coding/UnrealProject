@@ -14,6 +14,9 @@ class UNREALPROJECT_API AEnemyAIController : public AAIController
 {
 	GENERATED_BODY()
 
+public:
+	AEnemyAIController(const FObjectInitializer& ObjectInitializer);
+
 protected:
 	virtual void OnPossess(APawn* InPawn) override;
 

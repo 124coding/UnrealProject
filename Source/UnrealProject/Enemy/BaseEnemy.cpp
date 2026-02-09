@@ -2,6 +2,7 @@
 
 
 #include "BaseEnemy.h"
+#include "../UnrealProject.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -240,6 +241,7 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 		if (GetCapsuleComponent()) {
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 			GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+			GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Enemy, ECR_Block);
 			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		}
 
@@ -327,6 +329,7 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 	// 충돌 끔
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Enemy, ECR_Ignore);
 
 	// 래그돌 실행
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));

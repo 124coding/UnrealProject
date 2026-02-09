@@ -5,3 +5,4 @@
 #include "CoreMinimal.h"
 
 #define ECC_Enemy ECC_GameTraceChannel2
+#define ECC_Interact ECC_GameTraceChannel3
