@@ -3,6 +3,11 @@
 
 #include "MeleeEnemy.h"
 
+AMeleeEnemy::AMeleeEnemy()
+{
+	EnemyType = EEnemyType::Melee;
+}
+
 void AMeleeEnemy::Attack()
 {
 	if (CurrentState == EEnemyState::EES_Attacking || CurrentState == EEnemyState::EES_Dead)

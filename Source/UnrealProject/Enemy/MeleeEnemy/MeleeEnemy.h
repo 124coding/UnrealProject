@@ -15,6 +15,9 @@ class UNREALPROJECT_API AMeleeEnemy : public ABaseEnemy
 	GENERATED_BODY()
 	
 public:
+	AMeleeEnemy();
+
+public:
 	virtual void Attack() override;
 
 public:

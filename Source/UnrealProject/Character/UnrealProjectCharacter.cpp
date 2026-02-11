@@ -3,7 +3,7 @@
 #include "UnrealProjectCharacter.h"
 #include "UnrealProjectPlayerController.h"
 #include "../UnrealProject.h"
-#include "../UnrealProjectProjectile.h"
+#include "../Projectile/UnrealProjectProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"

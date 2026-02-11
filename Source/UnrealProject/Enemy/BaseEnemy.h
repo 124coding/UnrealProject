@@ -17,6 +17,12 @@ enum class EEnemyState : uint8 {
 	EES_Dead		UMETA(DisplayName = "Dead")				// 사망
 };
 
+UENUM(BlueprintType)
+enum class EEnemyType : uint8 {
+	Melee		    UMETA(DisplayName = "Melee"),
+	Ranged			UMETA(DisplayName = "Ranged")
+};
+
 UCLASS()
 class UNREALPROJECT_API ABaseEnemy : public ACharacter, public IHitInterface, public IPoolableInterface
 {
@@ -34,7 +40,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// 근접공격
+	// 공격
 	virtual void Attack();
 
 	// 공격 끝났는지 확인
@@ -86,10 +92,19 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
 	UAnimMontage* HitReactMontage_Right;
 
+protected:
+	// 공격 사거리
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Stats")
+	float AttackRange = 110.0f; // 근접 기준
+
 public:
 	// 태어날 때의 메쉬 상태를 저장할 변수
 	UPROPERTY()
 	FTransform InitialMeshTransform;
+
+	// 해당 적의 종류
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
+	EEnemyType EnemyType = EEnemyType::Melee;
 
 	// 현재 상태
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enemy|State")

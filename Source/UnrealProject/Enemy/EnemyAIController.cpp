@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "Navigation/CrowdFollowingComponent.h"
+#include "BaseEnemy.h"
 
 AEnemyAIController::AEnemyAIController(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UCrowdFollowingComponent>(TEXT("PathFollowingComponent")))
@@ -21,6 +22,13 @@ void AEnemyAIController::OnPossess(APawn* InPawn)
 	if (BehaviorTreeAsset) {
 		// 블랙보드 초기화
 		RunBehaviorTree(BehaviorTreeAsset);
+	}
+
+	if (ABaseEnemy* Enemy = Cast<ABaseEnemy>(InPawn)) {
+		// 적의 행동트리를 위해 적의 타입을 블랙보드에 저장
+		if (GetBlackboardComponent()) {
+			GetBlackboardComponent()->SetValueAsEnum(TEXT("EnemyType"), (uint8)Enemy->EnemyType);
+		}
 	}
 }
 

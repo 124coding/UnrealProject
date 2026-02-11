@@ -34,11 +34,24 @@ protected:
 
 	// 게임 시작 시 만들고 싶은 적의 종류와 개수 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Pool Setup")
-	TMap<TSubclassOf<AActor>, int32> InitialPoolConfig;
+	TMap<TSubclassOf<AActor>, int32> InitialEnemyPoolConfig;
 
 	// 맵에 있는 모든 볼륨을 저장할 배열
 	UPROPERTY()
 	TArray<class ASpawnVolume*> AllSpawnVolumes;
+
+protected:
+
+	// 적의 총알 종류를 담고 있는 맵
+	UPROPERTY()
+	TMap<UClass*, class UObjectPoolComponent*> EnemyProjectilePoolMap;
+
+	// 게임 시작 시 만들고 싶은 적의 총알의 종류와 개수 설정
+	UPROPERTY(EditDefaultsOnly, Category = "Pool Setup")
+	TMap<TSubclassOf<AActor>, int32> InitialEnemyProjectilePoolConfig;
+
+public:
+	AActor* SpawnProjectileFromPool(TSubclassOf<AActor> ProjectileClass, FVector Location, FRotator Rotation);
 
 public:
 

@@ -48,7 +48,7 @@ AActor* UObjectPoolComponent::SpawnFromPool(FVector SpawnLocation, FRotator Spaw
 		}
 	}
 
-	return nullptr;
+	return PooledActor;
 }
 
 void UObjectPoolComponent::ReturnToPool(AActor* ActorToReturn)

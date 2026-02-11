@@ -23,7 +23,7 @@ void AUnrealProjectGameMode::BeginPlay()
 	Super::BeginPlay();
 
 	// 설정된 적 종류만큼 풀 컴포넌트 동적 생성
-	for (auto& Elem : InitialPoolConfig) {
+	for (auto& Elem : InitialEnemyPoolConfig) {
 		TSubclassOf<AActor> ClassType = Elem.Key;
 		int32 Count = Elem.Value;
 
@@ -40,6 +40,26 @@ void AUnrealProjectGameMode::BeginPlay()
 
 			// 맵에 저장
 			EnemyPoolMap.Add(ClassType, NewPool);
+		}
+	}
+
+	for (auto& Elem : InitialEnemyProjectilePoolConfig) {
+		TSubclassOf<AActor> ClassType = Elem.Key;
+		int32 Count = Elem.Value;
+
+		if (ClassType) {
+			// 새 풀 컴포넌트 생성(이름은 클래스 이름)
+			FString PoolName = FString::Printf(TEXT("Pool_%s"), *ClassType->GetName());
+			UObjectPoolComponent* NewPool = NewObject<UObjectPoolComponent>(this, FName(*PoolName));
+
+			// 컴포넌트 등록
+			NewPool->RegisterComponent();
+
+			// 풀 초기화
+			NewPool->InitializePool(ClassType, Count);
+
+			// 맵에 저장
+			EnemyProjectilePoolMap.Add(ClassType, NewPool);
 		}
 	}
 
@@ -150,6 +170,28 @@ void AUnrealProjectGameMode::SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnC
 			}
 		}
 	}
+}
+
+AActor* AUnrealProjectGameMode::SpawnProjectileFromPool(TSubclassOf<AActor> ProjectileClass, FVector Location, FRotator Rotation)
+{
+	if (!IsValid(ProjectileClass)) {
+		return nullptr;
+	}
+
+	if (!EnemyProjectilePoolMap.Contains(ProjectileClass)) {
+		// 풀이 없다면 새로 생성해서 TMap에 등록
+		UObjectPoolComponent* NewPool = NewObject<UObjectPoolComponent>(this);
+
+		NewPool->RegisterComponent();
+
+		NewPool->InitializePool(ProjectileClass, 50); // 50개 정도 생성
+		EnemyProjectilePoolMap.Add(ProjectileClass, NewPool);
+	}
+
+	UObjectPoolComponent* TargetPool = EnemyProjectilePoolMap[ProjectileClass];
+	AActor* Projectile = TargetPool->SpawnFromPool(Location, Rotation);
+
+	return Projectile;
 }
 
 AActor* AUnrealProjectGameMode::SpawnEnemyFromPool(TSubclassOf<AActor> EnemyClass, FVector Location)

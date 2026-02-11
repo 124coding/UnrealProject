@@ -3,7 +3,7 @@
 
 #include "TP_WeaponComponent.h"
 #include "Character/UnrealProjectCharacter.h"
-#include "UnrealProjectProjectile.h"
+#include "Projectile/UnrealProjectProjectile.h"
 #include "GameFramework/PlayerController.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Kismet/GameplayStatics.h"
