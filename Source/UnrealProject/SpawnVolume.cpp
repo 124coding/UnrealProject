@@ -5,6 +5,7 @@
 #include "Components/BoxComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "NavigationSystem.h"
+#include "UnrealProject.h"
 
 // Sets default values
 ASpawnVolume::ASpawnVolume()
@@ -20,6 +21,8 @@ ASpawnVolume::ASpawnVolume()
 
 	// 게임에서 박스는 안보이게 (디버그용 false)
 	SpawningBox->SetHiddenInGame(false);
+
+	SpawningBox->SetCollisionProfileName(TEXT("OverlapAll"));
 }
 
 FVector ASpawnVolume::GetRandomPointInVolume()
@@ -47,7 +50,7 @@ FVector ASpawnVolume::GetRandomPointInVolume()
 			bool bHit = GetWorld()->OverlapBlockingTestByChannel(
 				CandidateLoc,
 				FQuat::Identity,
-				ECC_Pawn,
+				ECollisionChannel::ECC_Enemy,
 				FCollisionShape::MakeSphere(50.0f), /* 현재 하드 코딩으로 50.0f 값이 들어가 있기에 추후 적의 크기에 맞춰서 수정 필요 */
 				Params
 			);

@@ -20,7 +20,9 @@ ABaseEnemy::ABaseEnemy()
 	PrimaryActorTick.bCanEverTick = true;
 
 	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComp"));
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));
+	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECR_Ignore);
 
 }
 
@@ -42,6 +44,7 @@ void ABaseEnemy::BeginPlay()
 	if (GetMesh())
 	{
 		InitialMeshTransform = GetMesh()->GetRelativeTransform();
+		GetMesh()->SetCollisionProfileName(TEXT("Enemy"));
 	}
 }
 
@@ -236,12 +239,10 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 		GetMesh()->SetRelativeTransform(InitialMeshTransform);
-		GetMesh()->SetCollisionProfileName(TEXT("CharacterMesh")); // 원래 프로필로 수정
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 		if (GetCapsuleComponent()) {
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-			GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Enemy, ECR_Block);
 			GetMesh()->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 		}
 
@@ -288,7 +289,12 @@ void ABaseEnemy::OnPoolReturned_Implementation()
 	if (GetMesh())
 	{
 		GetMesh()->SetSimulatePhysics(false);
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector); // 관성 제거
+	}
+
+	if (GetCapsuleComponent()) {
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
 	// AI 정지 시키기
@@ -319,6 +325,16 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 {
 	if (CurrentState == EEnemyState::EES_Dead) return;
 
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (AIC)
+	{
+		// BrainComponent(비헤이비어 트리)가 있다면 스톱
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->StopLogic("Dead");
+		}
+	}
+
 	// 상태 변경
 	CurrentState = EEnemyState::EES_Dead;
 
@@ -328,8 +344,7 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 
 	// 충돌 끔
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Enemy, ECR_Ignore);
+	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 
 	// 래그돌 실행
 	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));

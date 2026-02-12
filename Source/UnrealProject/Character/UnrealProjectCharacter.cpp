@@ -32,6 +32,7 @@ AUnrealProjectCharacter::AUnrealProjectCharacter()
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Player"));
 
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
@@ -87,7 +88,11 @@ void AUnrealProjectCharacter::BeginPlay()
 		DroneComponent->OnReviveComplete.AddDynamic(this, &AUnrealProjectCharacter::Revive);
 	}
 
-	GetMesh()->HideBoneByName(TEXT("head"), PBO_None);
+	if (GetMesh()) {
+		GetMesh()->HideBoneByName(TEXT("head"), PBO_None);
+		GetMesh()->SetCollisionProfileName(TEXT("Player"));
+
+	}
 
 	/*if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Death);
@@ -269,8 +274,8 @@ void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
 		GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-		GetMesh1P()->SetSimulatePhysics(true);
-		GetMesh1P()->SetCollisionProfileName(TEXT("Ragdoll"));
+		//GetMesh1P()->SetSimulatePhysics(true);
+		//GetMesh1P()->SetCollisionProfileName(TEXT("Ragdoll"));
 		break;
 	}
 }

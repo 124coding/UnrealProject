@@ -15,6 +15,9 @@ class AUnrealProjectProjectile : public AActor, public IPoolableInterface
 {
 	GENERATED_BODY()
 
+public:
+	AUnrealProjectProjectile();
+
 protected:
 	/** Sphere collision component */
 	UPROPERTY(VisibleDefaultsOnly, Category=Projectile)
@@ -38,8 +41,10 @@ protected:
 	// 수명 관리용 타이머
 	FTimerHandle LifeSpanTimer;
 
+protected:
+	virtual void DealDamage(AActor* HitActor);
+
 public:
-	AUnrealProjectProjectile();
 
 	/** called when projectile hits something */
 	UFUNCTION()

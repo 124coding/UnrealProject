@@ -147,7 +147,9 @@ void ABaseWeapon::SetWeaponState(EWeaponState NewState)
 		WeaponMesh->SetCollisionObjectType(ECC_PhysicsBody);
 
 		WeaponMesh->SetCollisionResponseToAllChannels(ECR_Block); // 기본적으로 다 막음
-		WeaponMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore); // 플레이어는 통과
+		WeaponMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore); // Pawn 통과
+		WeaponMesh->SetCollisionResponseToChannel(ECC_Enemy, ECR_Ignore); // 적 통과
+		WeaponMesh->SetCollisionResponseToChannel(ECC_Player, ECR_Ignore); // 플레이어 통과
 		WeaponMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore); // 카메라는 통과
 
 		// Interact 채널에 대해 Block하라고 명령, 상호작용 켜기

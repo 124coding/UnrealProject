@@ -5,13 +5,15 @@
 #include "Components/SphereComponent.h"
 #include "../Component/ObjectPoolComponent.h"
 #include "../UnrealProject.h"
+#include "Kismet/GameplayStatics.h"
 
 AUnrealProjectProjectile::AUnrealProjectProjectile() 
 {
 	// Use a sphere as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(5.0f);
-	CollisionComp->BodyInstance.SetCollisionProfileName("Projectile");
+	// 이 부분은 에디터에서 직접 고르는게 필요 (Player용인지 Enemy용인지)
+	// CollisionComp->BodyInstance.SetCollisionProfileName("EnemyProjectile");
 	CollisionComp->OnComponentHit.AddDynamic(this, &AUnrealProjectProjectile::OnHit);		// set up a notification for when this component hits something blocking
 
 	// Players can't walk on it
@@ -23,7 +25,7 @@ AUnrealProjectProjectile::AUnrealProjectProjectile()
 
 	MeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComp"));
 	MeshComp->SetupAttachment(RootComponent);
-	MeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	MeshComp->SetCollisionProfileName(TEXT("NoCollision"));
 	MeshComp->SetGenerateOverlapEvents(false);
 	MeshComp->SetSimulatePhysics(false);
 
@@ -40,12 +42,26 @@ AUnrealProjectProjectile::AUnrealProjectProjectile()
 	LifeSpanTime = 5.0f;
 }
 
+void AUnrealProjectProjectile::DealDamage(AActor* HitActor)
+{
+	// hitActor에게 데미지를 받았다고 알림
+	// 광역 데미지는 추후 자식 클래스에서 ApplyRadialDamage로 수정
+	UGameplayStatics::ApplyDamage(
+		HitActor,
+		BaseDamage,
+		GetInstigatorController(),
+		this,
+		UDamageType::StaticClass()
+	);
+}
+
 void AUnrealProjectProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	// Only add impulse and destroy projectile if we hit a physics
-	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr) && OtherComp->IsSimulatingPhysics())
+	if (OtherActor && OtherActor != this)
 	{
-		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
+		UE_LOG(LogTemp, Log, TEXT("hit Actor: %s"), *OtherActor->GetName());
+		DealDamage(OtherActor);
 
 		Deactivate();
 	}

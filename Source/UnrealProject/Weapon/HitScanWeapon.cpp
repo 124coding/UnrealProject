@@ -6,6 +6,7 @@
 #include "DrawDebugHelpers.h" // 디버그 선 그리기
 #include "../HitInterface.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "../UnrealProject.h"
 
 void AHitScanWeapon::BeginPlay()
 {
@@ -43,7 +44,7 @@ void AHitScanWeapon::OnAttack()
 		HitResult,
 		Location,
 		TraceEnd,
-		ECollisionChannel::ECC_Visibility,
+		ECollisionChannel::ECC_PlayerProjectile,
 		QueryParams
 	);
 
