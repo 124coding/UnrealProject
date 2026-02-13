@@ -34,6 +34,11 @@ void ARangedEnemy::Attack()
 
 void ARangedEnemy::FireProjectile()
 {
+	if (CurrentState == EEnemyState::EES_Dead)
+	{
+		return;
+	}
+
 	if (ProjectileClass) {
 		// 발사 위치
 		FVector SpawnLocation = GetMesh()->GetSocketLocation(TEXT("AttackSocket_hand_r"));
@@ -57,14 +62,11 @@ void ARangedEnemy::FireProjectile()
 
 				if (AArcProjectile* Proj = Cast<AArcProjectile>(SpawnedActor)) {
 					if (TargetActor) {
+						Proj->SetInstigator(this);
 						Proj->LaunchTowards(SpawnLocation, TargetActor);
 					}
 				}
 			}
 		}
 	}
-}
-
-void ARangedEnemy::FireAtTarget()
-{
 }

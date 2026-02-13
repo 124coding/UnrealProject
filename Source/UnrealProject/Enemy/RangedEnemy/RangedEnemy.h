@@ -30,6 +30,4 @@ public:
 	// 애님 노티파이가 부를 함수
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void FireProjectile();
-
-	void FireAtTarget();
 };

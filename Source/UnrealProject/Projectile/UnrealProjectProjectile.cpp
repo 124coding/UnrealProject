@@ -58,9 +58,8 @@ void AUnrealProjectProjectile::DealDamage(AActor* HitActor)
 void AUnrealProjectProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	// Only add impulse and destroy projectile if we hit a physics
-	if (OtherActor && OtherActor != this)
+	if (OtherActor && OtherActor != this && OtherActor != GetInstigator())
 	{
-		UE_LOG(LogTemp, Log, TEXT("hit Actor: %s"), *OtherActor->GetName());
 		DealDamage(OtherActor);
 
 		Deactivate();
@@ -128,6 +127,10 @@ void AUnrealProjectProjectile::SetOwningPool_Implementation(UObjectPoolComponent
 
 void AUnrealProjectProjectile::Deactivate()
 {
+	if (GetInstigator()) {
+		SetInstigator(nullptr);
+	}
+
 	// 풀에게 돌려보내달라고 요청
 	if (OwningPoolComponent)
 	{

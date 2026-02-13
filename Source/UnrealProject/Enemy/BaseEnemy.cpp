@@ -133,7 +133,7 @@ void ABaseEnemy::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	if (AAIController* AIController = Cast<AAIController>(GetController())) {
 		if (UBrainComponent* Brain = AIController->GetBrainComponent())
 		{
-			Brain->StartLogic();
+			Brain->ResumeLogic("Hit Reaction");
 		}
 	}
 
@@ -198,7 +198,7 @@ void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
 		{
 			if (UBrainComponent* Brain = AIController->GetBrainComponent())
 			{
-				Brain->StartLogic(); // 즉시 재가동
+				Brain->ResumeLogic("Hit Reaction"); // 즉시 재가동
 			}
 		}
 	}
@@ -215,7 +215,7 @@ void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 	if (AAIController* AIController = Cast<AAIController>(GetController())) {
 		if (UBrainComponent* Brain = AIController->GetBrainComponent())
 		{
-			Brain->StopLogic("Hit Reaction");
+			Brain->PauseLogic("Hit Reaction");
 		}
 	}
 
@@ -325,22 +325,19 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 {
 	if (CurrentState == EEnemyState::EES_Dead) return;
 
-	AAIController* AIC = Cast<AAIController>(GetController());
-	if (AIC)
-	{
-		// BrainComponent(비헤이비어 트리)가 있다면 스톱
-		if (UBrainComponent* Brain = AIC->GetBrainComponent())
-		{
-			Brain->StopLogic("Dead");
-		}
-	}
-
 	// 상태 변경
 	CurrentState = EEnemyState::EES_Dead;
 
 	// 동작 정지
 	GetCharacterMovement()->StopMovementImmediately();
 	GetCharacterMovement()->DisableMovement();
+
+	// 애니메이션 로직 중단
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance)
+	{
+		AnimInstance->StopAllMontages(0.0f);
+	}
 
 	// 충돌 끔
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
