@@ -38,21 +38,54 @@ AUnrealProjectProjectile::AUnrealProjectProjectile()
 	ProjectileMovement->MaxSpeed = 1500.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
-
-	LifeSpanTime = 5.0f;
 }
 
-void AUnrealProjectProjectile::DealDamage(AActor* HitActor)
+void AUnrealProjectProjectile::DealDamage(const FHitResult& HitResult)
 {
-	// hitActor에게 데미지를 받았다고 알림
-	// 광역 데미지는 추후 자식 클래스에서 ApplyRadialDamage로 수정
-	UGameplayStatics::ApplyDamage(
-		HitActor,
-		BaseDamage,
-		GetInstigatorController(),
-		this,
-		UDamageType::StaticClass()
-	);
+	AActor* HitActor = HitResult.GetActor();
+	if (!HitActor) return;
+
+	// 단일 타겟 직사
+	if (DamageMethod == EDamageMethod::SingleTarget) {
+		// hitActor에게 데미지를 받았다고 알림
+		UGameplayStatics::ApplyDamage(
+			HitActor,
+			BaseDamage,
+			GetInstigatorController(),
+			this,
+			UDamageType::StaticClass()
+		);
+	}
+	// 광역 폭발 데미지
+	else if (DamageMethod == EDamageMethod::RadialDamage) {
+		TArray<AActor*> IgnoredActors;
+		IgnoredActors.Add(this);
+
+		// 폭발의 중심점
+		FVector Epicenter = HitResult.ImpactPoint;
+	
+		UGameplayStatics::ApplyRadialDamageWithFalloff(
+			GetWorld(),
+			BaseDamage,
+			MinimumDamage,
+			Epicenter,
+			InnerRadius,
+			ExplosionRadius,
+			1.0f,
+			UDamageType::StaticClass(),
+			IgnoredActors,
+			this,
+			GetInstigatorController()
+		);
+
+		// 안쪽 반경 (100% 데미지 구간) - 빨간색 구체
+		DrawDebugSphere(GetWorld(), Epicenter, InnerRadius, 24, FColor::Red, false, 2.0f, 0, 2.0f);
+
+		// 바깥쪽 반경 (데미지 감소 구간) - 노란색 구체
+		DrawDebugSphere(GetWorld(), Epicenter, ExplosionRadius, 24, FColor::Yellow, false, 2.0f, 0, 1.0f);
+
+		UE_LOG(LogTemp, Warning, TEXT("Radial Damage Applied at: %s"), *Epicenter.ToString());
+	}
 }
 
 void AUnrealProjectProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -60,7 +93,7 @@ void AUnrealProjectProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other
 	// Only add impulse and destroy projectile if we hit a physics
 	if (OtherActor && OtherActor != this && OtherActor != GetInstigator())
 	{
-		DealDamage(OtherActor);
+		DealDamage(Hit);
 
 		Deactivate();
 	}
@@ -143,6 +176,27 @@ void AUnrealProjectProjectile::Deactivate()
 	}
 }
 
+void AUnrealProjectProjectile::Launch(FVector ShootDirection)
+{
+	if (!ProjectileMovement) return;
+
+	// 물리적 움직임 강제 정지
+	ProjectileMovement->StopMovementImmediately();
+
+	// 정규화하여 방향만 남기고 속력 곱하기
+	ProjectileMovement->ProjectileGravityScale = 0.0f;
+	ProjectileMovement->Velocity = ShootDirection.GetSafeNormal() * ProjectileMovement->InitialSpeed;
+
+	// 강제로 즉시 업데이트
+	ProjectileMovement->UpdateComponentVelocity();
+
+	// 완전 재가동
+	ProjectileMovement->Activate(true);
+
+	// 총알이 날아가는 방향을 바라보게 회전
+	SetActorRotation(ShootDirection.Rotation());
+}
+
 void AUnrealProjectProjectile::LaunchTowards(FVector StartLoc, AActor* TargetActor)
 {
 	if (!TargetActor || !ProjectileMovement) return;
@@ -151,5 +205,6 @@ void AUnrealProjectProjectile::LaunchTowards(FVector StartLoc, AActor* TargetAct
 	FVector TargetLoc = TargetActor->GetActorLocation() + FVector(0, 0, 50.0f);
 
 	FVector Direction = (TargetLoc - StartLoc).GetSafeNormal();
-	ProjectileMovement->Velocity = Direction * ProjectileMovement->InitialSpeed;
+	
+	Launch(Direction);
 }

@@ -10,12 +10,13 @@ UObjectPoolComponent::UObjectPoolComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UObjectPoolComponent::InitializePool(TSubclassOf<AActor> ClassToPool, int32 Count)
+void UObjectPoolComponent::InitializePool(TSubclassOf<AActor> ClassToPool, int32 Count, AActor* Owner)
 {
 	PooledClass = ClassToPool;
 
 	for (int32 i = 0; i < Count; i++) {
-		CreateNewObject();
+		AActor* NewObject = CreateNewObject();
+		NewObject->SetOwner(Owner);
 	}
 }
 

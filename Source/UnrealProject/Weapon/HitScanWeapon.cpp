@@ -49,11 +49,15 @@ void AHitScanWeapon::OnAttack()
 	);
 
 	// 궤적 이펙트의 목표 지점 (맞았으면 맞은 곳, 안 맞았으면 허공의 끝점)
-	FVector BeamEndPoint = TraceEnd;
+	FVector BeamEndPoint = bHit ? HitResult.ImpactPoint : TraceEnd;
+
+	FVector MuzzleLocation = FVector::ZeroVector;
+	if (WeaponMesh) {
+		MuzzleLocation = WeaponMesh->GetSocketLocation(MuzzleSocketName);
+	}
 
 	if (bHit) {
 		UE_LOG(LogTemp, Log, TEXT("HitScanWeapon Hit"));
-		BeamEndPoint = HitResult.Location;
 
 		// 데미지 적용
 		AActor* HitActor = HitResult.GetActor();
@@ -78,7 +82,7 @@ void AHitScanWeapon::OnAttack()
 			UGameplayStatics::SpawnEmitterAtLocation(
 				GetWorld(),
 				ImpactParticles,
-				HitResult.Location,
+				HitResult.ImpactPoint,
 				HitResult.ImpactNormal.Rotation() // 벽의 각도에 맞춰 이펙트 회전
 			);
 		}
@@ -87,7 +91,7 @@ void AHitScanWeapon::OnAttack()
 
 		DrawDebugLine(
 			GetWorld(),
-			Location, // 총구 위치(또는 Location)에서 시작
+			MuzzleLocation, // 총구 위치(또는 Location)에서 시작
 			BeamEndPoint,       // 계산된 끝점까지
 			FColor::Red,        // 색상
 			false,              // 영구 표시 X

@@ -8,16 +8,9 @@ AMeleeEnemy::AMeleeEnemy()
 	EnemyType = EEnemyType::Melee;
 }
 
-void AMeleeEnemy::Attack()
+void AMeleeEnemy::OnAttack()
 {
-	if (CurrentState == EEnemyState::EES_Attacking || CurrentState == EEnemyState::EES_Dead)
-	{
-		return;
-	}
-
-	CurrentState = EEnemyState::EES_Attacking;
-
-	Super::Attack();
+	Super::OnAttack();
 
 	if (MeleeAttackMontages.Num() > 0) {
 		// ·£´ý ¼ýÀÚ »Ì¾Æ¼­ ´çÃ·µÈ ¸ùÅ¸ÁÖ °¡Á®¿Í Àç»ý
@@ -26,6 +19,7 @@ void AMeleeEnemy::Attack()
 		UAnimMontage* SelectedMontage = MeleeAttackMontages[RandomIndex];
 
 		if (SelectedMontage) {
+			CurrentState = EEnemyState::EES_Attacking;
 			PlayAnimMontage(SelectedMontage);
 
 			//UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();

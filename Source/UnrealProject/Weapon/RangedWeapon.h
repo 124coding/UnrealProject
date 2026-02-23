@@ -45,6 +45,9 @@ protected:
 	// 총알 줄이는 함수
 	void ConsumeAmmo();
 
+	// 화면 중앙 트레이스 함수
+	bool GetCrosshairTarget(FVector& OutHitLocation);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	USoundBase* ReloadSound;
@@ -81,8 +84,6 @@ protected:
 	float RecoilInterpSpeed = 15.0f;
 
 protected:
-	// 마지막으로 총을 쏜 시각
-	double LastFireTime = 0.0f;
 
 	// 장전 중인지 여부
 	bool bIsReloading = false;

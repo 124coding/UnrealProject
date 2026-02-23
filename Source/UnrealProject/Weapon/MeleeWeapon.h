@@ -1,0 +1,40 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "BaseWeapon.h"
+#include "MeleeWeapon.generated.h"
+
+/**
+ * 
+ */
+UCLASS()
+class UNREALPROJECT_API AMeleeWeapon : public ABaseWeapon
+{
+	GENERATED_BODY()
+
+public:
+	AMeleeWeapon();
+public:
+	void TickAttack();
+
+	virtual bool CanAttack() override;
+
+	virtual void OnAttack() override;
+
+	void EndAttack();
+
+protected:
+	// 이미 때린 적을 기억하는 배열
+	UPROPERTY()
+	TArray<AActor*> IgnoreActors;
+	
+	// 이전 프레임의 소켓 위치 저장용
+	FVector LastTipLocation;
+	FVector LastBaseLocation;
+
+	// 스윕 반지름 (칼 두께)
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	float TraceRadius = 20.0f;
+};

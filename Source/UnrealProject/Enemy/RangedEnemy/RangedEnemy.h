@@ -17,7 +17,7 @@ class UNREALPROJECT_API ARangedEnemy : public ABaseEnemy
 public:
 	ARangedEnemy();
 
-	virtual void Attack() override;
+	virtual void OnAttack() override;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")

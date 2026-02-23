@@ -76,12 +76,20 @@ bool ABaseWeapon::CanAttack()
 	// 무기를 소유한 플레이어가 없으면 실행 불가
 	if (!GetOwner()) return false;
 
+	// 시간 계산해서 공격 속도 체크
+	double CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastAttackTime < AttackRate) {
+		UE_LOG(LogTemp, Log, TEXT("Cant Attack So Fast"));
+		return false;
+	}
+
 	return true;
 
 }
 
 void ABaseWeapon::OnAttack()
 {
+	LastAttackTime = GetWorld()->GetTimeSeconds();
 }
 
 void ABaseWeapon::Interact_Implementation(AActor* InstigatorActor)
@@ -116,6 +124,11 @@ void ABaseWeapon::SetWeaponState(EWeaponState NewState)
 
 		WeaponMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		WeaponMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
+
+		if (RootComponent)
+		{
+			WeaponMesh->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+		}
 
 		WeaponMesh->SetRelativeLocation(FVector::ZeroVector);
 		WeaponMesh->SetRelativeRotation(FRotator::ZeroRotator);

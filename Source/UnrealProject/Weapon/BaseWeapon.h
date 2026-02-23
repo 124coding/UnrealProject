@@ -69,6 +69,9 @@ public:
 	class UInputMappingContext* WeaponMappingContext;
 
 protected:
+	// 마지막 공격시간
+	double LastAttackTime = 0.0f;
+
 	UPROPERTY()
 	EWeaponState CurrentState;
 

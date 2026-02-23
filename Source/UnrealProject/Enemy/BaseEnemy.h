@@ -40,8 +40,13 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	// 공격이 가능한지 확인
+	virtual bool CanAttack();
+
+	virtual void OnAttack();
+
 	// 공격
-	virtual void Attack();
+	void Attack();
 
 	// 공격 끝났는지 확인
 	bool IsAttacking() const;

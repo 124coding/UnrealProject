@@ -6,6 +6,17 @@
 #include "Kismet/GameplayStatics.h"
 
 
+void AArcProjectile::Launch(FVector ShootDirection)
+{
+	if (ProjectileMovement) {
+		// 입력 받은 방향으로 힘을 가함
+		ProjectileMovement->Velocity = ShootDirection * ProjectileMovement->InitialSpeed;
+
+		// 곡사는 중력을 킴
+		ProjectileMovement->bShouldBounce = true;
+	}
+}
+
 void AArcProjectile::LaunchTowards(FVector StartLoc, AActor* TargetActor)
 {
 	if (!TargetActor || !ProjectileMovement) return;
@@ -29,7 +40,6 @@ void AArcProjectile::LaunchTowards(FVector StartLoc, AActor* TargetActor)
 	if (bHasAimSolution) {
 		UE_LOG(LogTemp, Log, TEXT("Aim Success"));
 		ProjectileMovement->Velocity = OutLaunchVelocity;
-		SetActorRotation(OutLaunchVelocity.Rotation());
 	}
 	else {
 		// 계산 실패 시 부모의 직사로 대체

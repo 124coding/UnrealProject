@@ -55,8 +55,22 @@ void ABaseEnemy::Tick(float DeltaTime)
 
 }
 
+bool ABaseEnemy::CanAttack() {
+	if (CurrentState == EEnemyState::EES_Normal) {
+		return true;
+	}
+
+	return false;
+}
+
+void ABaseEnemy::OnAttack() {
+}
+
 void ABaseEnemy::Attack() {
+	if (!CanAttack()) return;
 	UE_LOG(LogTemp, Log, TEXT("Enemy Attack"));
+
+	OnAttack();
 }
 
 bool ABaseEnemy::IsAttacking() const

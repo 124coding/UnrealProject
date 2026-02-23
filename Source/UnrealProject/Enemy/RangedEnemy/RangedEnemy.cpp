@@ -15,18 +15,12 @@ ARangedEnemy::ARangedEnemy()
 	AttackRange = 1000.0f;
 }
 
-void ARangedEnemy::Attack()
+void ARangedEnemy::OnAttack()
 {
-	if (CurrentState == EEnemyState::EES_Attacking || CurrentState == EEnemyState::EES_Dead)
-	{
-		return;
-	}
-
-	CurrentState = EEnemyState::EES_Attacking;
-
-	Super::Attack();
+	Super::OnAttack();
 
 	if (RangedAttackMontage) {
+		CurrentState = EEnemyState::EES_Attacking;
 		PlayAnimMontage(RangedAttackMontage);
 	}
 

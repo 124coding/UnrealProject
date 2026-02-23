@@ -20,7 +20,7 @@ public:
 public:	
 	// 풀 초기화 (어떤 클래스를 몇 개 만들건지)
 	UFUNCTION(BlueprintCallable, Category = "ObjectPool")
-	void InitializePool(TSubclassOf<AActor> ClassToPool, int32 Count);
+	void InitializePool(TSubclassOf<AActor> ClassToPool, int32 Count, AActor* Owner = nullptr);
 
 	// 풀에서 하나만 가져오기
 	UFUNCTION(BlueprintCallable, Category = "ObjectPool")

@@ -15,6 +15,8 @@ class UNREALPROJECT_API AArcProjectile : public AUnrealProjectProjectile
 	GENERATED_BODY()
 
 public:
+	virtual void Launch(FVector ShootDirection) override;
+
 	virtual void LaunchTowards(FVector StartLoc, AActor* TargetActor) override;
 	
 };

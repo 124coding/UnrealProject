@@ -7,6 +7,7 @@
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "../UnrealProject.h"
 
 ARangedWeapon::ARangedWeapon()
 {
@@ -52,8 +53,6 @@ void ARangedWeapon::OnAttack()
 	Super::OnAttack();
 
 	ConsumeAmmo();
-
-	LastFireTime = GetWorld()->GetTimeSeconds();
 
 	if (MuzzleFlashFX) {
 		UNiagaraFunctionLibrary::SpawnSystemAttached(
@@ -173,13 +172,6 @@ bool ARangedWeapon::CanAttack()
 		return false;
 	}
 
-	// 시간 계산해서 연사 속도 체크
-	double CurrentTime = GetWorld()->GetTimeSeconds();
-	if (CurrentTime - LastFireTime < AttackRate) {
-		UE_LOG(LogTemp, Log, TEXT("Cant Fire So Fast"));
-		return false;
-	}
-
 	return true;
 }
 
@@ -193,3 +185,55 @@ void ARangedWeapon::ConsumeAmmo()
 		}
 	}
 }
+
+bool ARangedWeapon::GetCrosshairTarget(FVector& OutHitLocation)
+{
+	APlayerController* PC = Cast<APlayerController>(GetInstigatorController());
+	if (!PC) {
+		UE_LOG(LogTemp, Warning, TEXT("CrossHairError"));
+		return false;
+	}
+
+	// 화면 크기 가져오기
+	int32 ViewportSizeX, ViewportSizeY;
+	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+	// 화면 정중앙 좌표
+	FVector2D ScreenLocation(ViewportSizeX * 0.5f, ViewportSizeY * 0.5f);
+
+	// 2D 좌표를 3D 월드 좌표와 방향으로 변환
+	FVector WorldLocation, WorldDirection;
+	bool bSuccess = PC->DeprojectScreenPositionToWorld(
+		ScreenLocation.X, ScreenLocation.Y, WorldLocation, WorldDirection
+	);
+
+	if (bSuccess) {
+		// 카메라에서 레이저 쏘기
+		FVector Start = PC->PlayerCameraManager->GetCameraLocation();;
+		FVector End = Start + (WorldDirection * AttackRange);
+
+		FHitResult HitResult;
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this); // 무기는 무시
+		QueryParams.AddIgnoredActor(GetOwner());
+
+		GetWorld()->LineTraceSingleByChannel(
+			HitResult,
+			Start,
+			End,
+			ECollisionChannel::ECC_Visibility,
+			QueryParams
+		);
+
+		if (HitResult.bBlockingHit) {
+			OutHitLocation = HitResult.ImpactPoint;
+			return true;
+		}
+		else {
+			OutHitLocation = End; // 최대 사거리
+			return true;
+		}
+	}
+	return false;
+}
+

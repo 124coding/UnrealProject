@@ -10,6 +10,12 @@
 class USphereComponent;
 class UProjectileMovementComponent;
 
+UENUM(BlueprintType)
+enum class EDamageMethod : uint8 {
+	SingleTarget	UMETA(DisplayName = "SingleTarget"),
+	RadialDamage	UMETA(DisplayName = "RadialDamage")
+};
+
 UCLASS(config=Game)
 class AUnrealProjectProjectile : public AActor, public IPoolableInterface
 {
@@ -41,8 +47,23 @@ protected:
 	// 수명 관리용 타이머
 	FTimerHandle LifeSpanTimer;
 
+	// 데미지 적용 방식
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	EDamageMethod DamageMethod = EDamageMethod::SingleTarget;
+
+	// 폭발 반경
+	UPROPERTY(EditDefaultsOnly, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	float ExplosionRadius = 200.0f;
+
+	// 광역 최소 데미지
+	UPROPERTY(EditDefaultsOnly, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	float MinimumDamage = 10.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Damage", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	float InnerRadius = 100.0f; // 100% 데미지 반경
+
 protected:
-	virtual void DealDamage(AActor* HitActor);
+	virtual void DealDamage(const FHitResult& HitResult);
 
 public:
 
@@ -66,6 +87,9 @@ public:
 
 	// 풀로 돌아가는 함수
 	void Deactivate();
+
+	// 방향 벡터를 받아서 날아가는 로직
+	virtual void Launch(FVector ShootDirection);
 
 	// 타겟을 향해 날아가는 로직
 	virtual void LaunchTowards(FVector StartLoc, AActor* TargetActor);

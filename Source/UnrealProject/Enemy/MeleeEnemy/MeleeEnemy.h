@@ -18,7 +18,7 @@ public:
 	AMeleeEnemy();
 
 public:
-	virtual void Attack() override;
+	virtual void OnAttack() override;
 
 public:
 	// 여러 개의 근접 공격 모션을 배열로 담아놓는다.

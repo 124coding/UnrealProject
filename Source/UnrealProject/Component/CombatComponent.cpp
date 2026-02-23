@@ -119,6 +119,7 @@ void UCombatComponent::PickupWeapon(ABaseWeapon* NewWeapon)
 	
 	NewWeapon->SetWeaponState(EWeaponState::Equipped);
 	NewWeapon->SetOwner(GetOwner());
+	NewWeapon->SetInstigator(Cast<APawn>(GetOwner()));
 
 	EWeaponSlot Slot = NewWeapon->WeaponType;
 
