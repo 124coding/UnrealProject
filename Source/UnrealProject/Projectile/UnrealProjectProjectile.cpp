@@ -42,11 +42,11 @@ AUnrealProjectProjectile::AUnrealProjectProjectile()
 
 void AUnrealProjectProjectile::DealDamage(const FHitResult& HitResult)
 {
-	AActor* HitActor = HitResult.GetActor();
-	if (!HitActor) return;
-
 	// 단일 타겟 직사
 	if (DamageMethod == EDamageMethod::SingleTarget) {
+		AActor* HitActor = HitResult.GetActor();
+		if (!HitActor) return;
+
 		// hitActor에게 데미지를 받았다고 알림
 		UGameplayStatics::ApplyDamage(
 			HitActor,
@@ -88,8 +88,26 @@ void AUnrealProjectProjectile::DealDamage(const FHitResult& HitResult)
 	}
 }
 
+void AUnrealProjectProjectile::TimeOutExplode()
+{
+	// 현재 위치를 폭심지로
+	FHitResult DummyHit;
+	DummyHit.ImpactPoint = GetActorLocation();
+
+	DealDamage(DummyHit);
+
+	UE_LOG(LogTemp, Warning, TEXT("Explosion"));
+
+	Deactivate();
+
+	// 타이머 초기화
+	GetWorld()->GetTimerManager().ClearTimer(ExplosionTimerHandle);
+}
+
 void AUnrealProjectProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (bExplodeOnTimer) return;
+
 	// Only add impulse and destroy projectile if we hit a physics
 	if (OtherActor && OtherActor != this && OtherActor != GetInstigator())
 	{
@@ -113,7 +131,7 @@ void AUnrealProjectProjectile::OnPoolSpawned_Implementation()
 	// 발사체 이동 컴포넌트 초기화
 	if (ProjectileMovement) {
 		ProjectileMovement->SetUpdatedComponent(CollisionComp);
-		ProjectileMovement->ProjectileGravityScale = 1.0f;
+		// ProjectileMovement->ProjectileGravityScale = 1.0f;
 		ProjectileMovement->Activate();
 	}
 
@@ -176,16 +194,19 @@ void AUnrealProjectProjectile::Deactivate()
 	}
 }
 
-void AUnrealProjectProjectile::Launch(FVector ShootDirection)
+void AUnrealProjectProjectile::Launch(FVector ShootDirection, float SpeedOverride)
 {
 	if (!ProjectileMovement) return;
 
+	// 오버라이드 값이 들어오면 본인의 속도를 사용하고 아니면 자기 속도
+	float FinalSpeed = (SpeedOverride > 0.0f) ? SpeedOverride : ProjectileMovement->InitialSpeed;
+
 	// 물리적 움직임 강제 정지
 	ProjectileMovement->StopMovementImmediately();
+	ProjectileMovement->SetUpdatedComponent(RootComponent);
 
 	// 정규화하여 방향만 남기고 속력 곱하기
-	ProjectileMovement->ProjectileGravityScale = 0.0f;
-	ProjectileMovement->Velocity = ShootDirection.GetSafeNormal() * ProjectileMovement->InitialSpeed;
+	ProjectileMovement->Velocity = ShootDirection.GetSafeNormal() * FinalSpeed;
 
 	// 강제로 즉시 업데이트
 	ProjectileMovement->UpdateComponentVelocity();
@@ -195,6 +216,20 @@ void AUnrealProjectProjectile::Launch(FVector ShootDirection)
 
 	// 총알이 날아가는 방향을 바라보게 회전
 	SetActorRotation(ShootDirection.Rotation());
+
+	// 시한폭탄 모드라면 타이머 시작
+	if (bExplodeOnTimer)
+	{
+		ProjectileMovement->ProjectileGravityScale = 1.0f; // 투척 무기기에 중력 살리기
+
+		GetWorld()->GetTimerManager().SetTimer(
+			ExplosionTimerHandle,
+			this,
+			&AUnrealProjectProjectile::TimeOutExplode,
+			ExplosionDelay,                           
+			false                                     
+		);
+	}
 }
 
 void AUnrealProjectProjectile::LaunchTowards(FVector StartLoc, AActor* TargetActor)

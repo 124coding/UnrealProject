@@ -41,6 +41,62 @@ void ABaseWeapon::Tick(float DeltaTime)
 void ABaseWeapon::Attack() {
 	if (!CanAttack()) return;
 
+	OnAttack();
+}
+
+bool ABaseWeapon::CanAttack()
+{
+	if (CurrentState == EWeaponState::Dropped) return false;
+
+	// 무기를 소유한 플레이어가 없으면 실행 불가
+	if (!GetOwner()) return false;
+
+	// 시간 계산해서 공격 속도 체크
+	double CurrentTime = GetWorld()->GetTimeSeconds();
+	if (CurrentTime - LastAttackTime < AttackRate) {
+		UE_LOG(LogTemp, Log, TEXT("Cant Attack So Fast"));
+		return false;
+	}
+
+	return true;
+
+}
+
+void ABaseWeapon::OnAttack()
+{
+	if (FireMode == EWeaponFireMode::Single)
+	{
+		// 단발 (Single)
+		ExecuteFire();
+	}
+	else if (FireMode == EWeaponFireMode::Auto)
+	{
+		// 연사 (Auto)
+		ExecuteFire();
+		GetWorldTimerManager().SetTimer(
+			FireTimerHandle, this, &ABaseWeapon::ExecuteFire, AttackRate, true
+		);
+	}
+	else if (FireMode == EWeaponFireMode::Burst)
+	{
+		// 점사 (Burst)
+		CurrentBurstCount = 0;
+		HandleBurstFire();
+	}
+}
+
+void ABaseWeapon::StopAttack() {
+
+	if (FireMode == EWeaponFireMode::Auto)
+	{
+		GetWorldTimerManager().ClearTimer(FireTimerHandle);
+	}
+}
+
+void ABaseWeapon::ExecuteFire()
+{
+	LastAttackTime = GetWorld()->GetTimeSeconds();
+
 	// 무기를 소유한 플레이어가 없으면 실행 불가
 	AUnrealProjectCharacter* OwnerCharacter = Cast<AUnrealProjectCharacter>(GetOwner());
 	if (OwnerCharacter == nullptr || OwnerCharacter->GetController() == nullptr)
@@ -65,31 +121,24 @@ void ABaseWeapon::Attack() {
 			AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
 	}
-
-	OnAttack();
 }
 
-bool ABaseWeapon::CanAttack()
+void ABaseWeapon::HandleBurstFire()
 {
-	if (CurrentState == EWeaponState::Dropped) return false;
+	if (CurrentBurstCount >= MaxBurstCount) return;
 
-	// 무기를 소유한 플레이어가 없으면 실행 불가
-	if (!GetOwner()) return false;
+	// 한번 공격
+	ExecuteFire();
+	CurrentBurstCount++;
 
-	// 시간 계산해서 공격 속도 체크
-	double CurrentTime = GetWorld()->GetTimeSeconds();
-	if (CurrentTime - LastAttackTime < AttackRate) {
-		UE_LOG(LogTemp, Log, TEXT("Cant Attack So Fast"));
-		return false;
+	// 남은 공격 횟수가 있다면 다시 호출
+
+	if (CurrentBurstCount < MaxBurstCount)
+	{
+		GetWorldTimerManager().SetTimer(
+			FireTimerHandle, this, &ABaseWeapon::HandleBurstFire, BurstFireRate, false
+		);
 	}
-
-	return true;
-
-}
-
-void ABaseWeapon::OnAttack()
-{
-	LastAttackTime = GetWorld()->GetTimeSeconds();
 }
 
 void ABaseWeapon::Interact_Implementation(AActor* InstigatorActor)

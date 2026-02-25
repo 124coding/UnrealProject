@@ -117,11 +117,27 @@ void UCombatComponent::PickupWeapon(ABaseWeapon* NewWeapon)
 {
 	if (NewWeapon == nullptr) return;
 	
+	EWeaponSlot Slot = NewWeapon->WeaponType;
+
+	// 투척 특별 관리
+	if (Slot == EWeaponSlot::Throwable && CarriedWeapons.Contains(Slot)) {
+		ABaseWeapon* OldWeapon = CarriedWeapons[Slot];
+
+		// 들고 있는 것과 같은 클래스일 시
+		if (OldWeapon->GetClass() == NewWeapon->GetClass()) {
+			// 개수 증가
+			ARangedWeapon* OldGrenade = Cast<ARangedWeapon>(OldWeapon);
+			OldGrenade->PlusMaxAmmoInClip();
+			OldGrenade->SetCurrentAmmoInClip(OldGrenade->GetMaxAmmoInClip());
+
+			NewWeapon->Destroy();
+			return;
+		}
+	}
+
 	NewWeapon->SetWeaponState(EWeaponState::Equipped);
 	NewWeapon->SetOwner(GetOwner());
 	NewWeapon->SetInstigator(Cast<APawn>(GetOwner()));
-
-	EWeaponSlot Slot = NewWeapon->WeaponType;
 
 	// 무기의 타입에 맞는 슬롯이 비었는지 확인하고 비어 있지 않으면 해당 슬롯에 있는 무기를 떨어뜨림
 	if (CarriedWeapons.Contains(Slot)) {
@@ -158,6 +174,8 @@ void UCombatComponent::EquipWeaponBySlot(EWeaponSlot SlotToEquip)
 	if (!CarriedWeapons.Contains(SlotToEquip)) return;
 
 	ABaseWeapon* WeaponToEquip = CarriedWeapons[SlotToEquip];
+
+	if (Cast<ARangedWeapon>(WeaponToEquip)->GetMaxAmmoInClip() <= 0) return;
 	
 	// 현재 들고 있는 무기는 집어넣기
 	if (CurrentWeapon) CurrentWeapon->SetActorHiddenInGame(true);
@@ -218,10 +236,9 @@ void UCombatComponent::Attack() {
 
 void UCombatComponent::StopAttack()
 {
-	// 현재 들고 있는 무기가 원거리 무기라면 리셋 신호 보냄
-	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon))
+	if (CurrentWeapon)
 	{
-		RangedWeapon->StopAttack();
+		CurrentWeapon->StopAttack();
 	}
 }
 
@@ -232,4 +249,38 @@ void UCombatComponent::Reload() {
 
 	if (RangedWeapon) RangedWeapon->Reload();
 	else UE_LOG(LogTemp, Warning, TEXT("This weapon cant Reload"));
+}
+
+void UCombatComponent::CycleWeapon(bool bScrollDown)
+{
+	uint8 CurrentSlotIndex = 0;
+
+	if (CurrentWeapon) {
+		CurrentSlotIndex = (uint8)CurrentWeapon->WeaponType;
+	}
+
+	uint8 NextSlotIndex = CurrentSlotIndex;
+	uint8 MaxSlotIndex = (uint8)EWeaponSlot::MAX;
+
+	for (int32 i = 0; i < MaxSlotIndex; i++) {
+		// 휠 방향에 따라 인덱스 이동
+		if (bScrollDown) {
+			NextSlotIndex++;
+			if (NextSlotIndex >= MaxSlotIndex) NextSlotIndex = 0;
+		}
+		else {
+			if (NextSlotIndex == 0) NextSlotIndex = MaxSlotIndex - 1;
+			else NextSlotIndex--;
+		}
+
+		EWeaponSlot SlotToCheck = (EWeaponSlot)NextSlotIndex;
+
+		// 슬롯이 비어 있다면 다음 슬롯 검사
+		if (CarriedWeapons.Contains(SlotToCheck) && CarriedWeapons[SlotToCheck] != nullptr)
+		{
+			// 무기를 찾았다면 바로 장착
+			EquipWeaponBySlot(SlotToCheck);
+			break;
+		}
+	}
 }

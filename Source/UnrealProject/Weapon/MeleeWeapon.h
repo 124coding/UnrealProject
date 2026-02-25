@@ -21,7 +21,7 @@ public:
 
 	virtual bool CanAttack() override;
 
-	virtual void OnAttack() override;
+	virtual void ExecuteFire() override;
 
 	void EndAttack();
 

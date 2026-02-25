@@ -18,9 +18,9 @@ void AProjectileWeapon::BeginPlay()
 	ProjectilePool->InitializePool(ProjectileClass, MaxAmmoPerClip * 3, this);
 }
 
-void AProjectileWeapon::OnAttack()
+void AProjectileWeapon::ExecuteFire()
 {
-	Super::OnAttack();
+	Super::ExecuteFire();
 
 	if (!ProjectileClass || !ProjectilePool) return;
 
@@ -30,25 +30,44 @@ void AProjectileWeapon::OnAttack()
 		FVector LaunchDir; // 최종 발사 방향
 		FVector HitTarget; // 조준점이 보고 있는 곳
 
-		GetCrosshairTarget(HitTarget);
+		bool bHit = GetCrosshairTarget(HitTarget);
 
-		// 거리 계산
-		float DistToTarget = (HitTarget - SocketLocation).Size();
-
-		// 너무 가까우면 그냥 정면으로 발사
-		if (DistToTarget < 100.0f)
-		{
-			LaunchDir = GetActorForwardVector();
+		if (bHit) {
+			LaunchDir = CalculateLaunchDirection(SocketLocation, HitTarget);
 		}
-		else
-		{
-			LaunchDir = (HitTarget - SocketLocation).GetSafeNormal();
+		else {
+			// 완전 허공
+			if (APlayerController* PC = Cast<APlayerController>(GetInstigatorController())) {
+				LaunchDir = PC->PlayerCameraManager->GetCameraRotation().Vector();
+			}
+			else {
+				LaunchDir = GetActorForwardVector(); // 방어 코드
+			}
 		}
 
 		if (AActor* SpawnedActor = ProjectilePool->SpawnFromPool(SocketLocation, LaunchDir.Rotation())) {
 			if (AUnrealProjectProjectile* Projectile = Cast<AUnrealProjectProjectile>(SpawnedActor)) {
-				Projectile->Launch(LaunchDir);
+				float CurrentSpeed = GetLaunchSpeed();
+				Projectile->Launch(LaunchDir, CurrentSpeed);
 			}
 		}
 	}
+}
+
+FVector AProjectileWeapon::CalculateLaunchDirection(FVector MuzzleLocation, FVector HitTarget)
+{
+	float DistToTarget = (HitTarget - MuzzleLocation).Size();
+
+	if (DistToTarget < 100.0f)
+	{
+		return GetActorForwardVector(); // 너무 가까우면 정면
+	}
+
+	// 기본 직사 방향
+	return (HitTarget - MuzzleLocation).GetSafeNormal();
+}
+
+float AProjectileWeapon::GetLaunchSpeed() const
+{
+	return -1.0f;
 }

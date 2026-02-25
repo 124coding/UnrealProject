@@ -26,13 +26,35 @@ public:
 	virtual void Tick(float DeltaTime) override;
 	
 public:
-	virtual void OnAttack() override;
+	virtual void ExecuteFire() override;
 
-	void StopAttack();
+	virtual void StopAttack() override;
 
 	// ¿Á¿Â¿¸
+	virtual bool CanReload();
 	virtual void Reload();
+
 	void FinishReload();
+
+	void SetMaxAmmoInClip(int32 SetCount) {
+		MaxAmmoPerClip = SetCount;
+	}
+
+	int32 GetMaxAmmoInClip() {
+		return MaxAmmoPerClip;
+	}
+
+	void MinusMaxAmmoInClip() {
+		MaxAmmoPerClip--;
+	}
+
+	void PlusMaxAmmoInClip() {
+		MaxAmmoPerClip++;
+	}
+
+	void SetCurrentAmmoInClip(int32 SetCount) {
+		CurrentAmmoInClip = SetCount;
+	}
 
 	int32 GetCurrentAmmoInClip() {
 		return CurrentAmmoInClip;

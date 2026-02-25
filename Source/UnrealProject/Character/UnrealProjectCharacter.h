@@ -89,6 +89,9 @@ class AUnrealProjectCharacter : public ACharacter, public IHitInterface
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InteractAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* WeaponScroll;
+
 	//// 크로스헤어를 넣어줄 변수
 	//UPROPERTY(EditAnywhere, Category = "UI")
 	//TSubclassOf<class UUserWidget> CrosshairWidgetClass;
@@ -110,6 +113,8 @@ protected:
 	void Input_EquipSecondary();
 	void Input_EquipMelee();
 	void Input_EquipThrowable();
+
+	void Input_ScrollWeapon(const FInputActionValue& Value);
 
 public:
 		

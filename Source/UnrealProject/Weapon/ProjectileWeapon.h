@@ -18,7 +18,7 @@ public:
 	AProjectileWeapon();
 
 	virtual void BeginPlay() override;
-	virtual void OnAttack() override;
+	virtual void ExecuteFire() override;
 
 protected:
 	// 투사체 클래스
@@ -27,4 +27,10 @@ protected:
 
 	UPROPERTY()
 	class UObjectPoolComponent* ProjectilePool;
+
+	// 방향 계산 함수
+	virtual FVector CalculateLaunchDirection(FVector MuzzleLocation, FVector HitTarget);
+
+	// 속도 반환 함수
+	virtual float GetLaunchSpeed() const;
 };

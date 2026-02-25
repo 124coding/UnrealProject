@@ -43,7 +43,13 @@ public:
 
 	void Reload();
 
+	void CycleWeapon(bool bScrollUp);
+
 public:
+	int32 CarriedWeaponsCount() {
+		return CarriedWeapons.Num();
+	}
+
 	ABaseWeapon* GetCurrentWeapon() {
 		return CurrentWeapon;
 	}

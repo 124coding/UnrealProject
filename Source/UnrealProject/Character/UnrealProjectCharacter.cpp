@@ -136,6 +136,18 @@ void AUnrealProjectCharacter::Input_EquipThrowable()
 	CombatComponent->EquipWeaponBySlot(EWeaponSlot::Throwable);
 }
 
+void AUnrealProjectCharacter::Input_ScrollWeapon(const FInputActionValue& Value)
+{
+	if (!CombatComponent) return;
+
+	float ScrollValue = Value.Get<float>(); // 위로 굴리면 1.0, 아래는 -1.0
+
+	if (ScrollValue != 0.0f && CombatComponent->CarriedWeaponsCount() > 1) {
+		// 양수면 이전 무기, 음수면 다음 무기
+		CombatComponent->CycleWeapon(ScrollValue < 0.0f);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////// Input
 
 void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -144,7 +156,7 @@ void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// Firing
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, CombatComponent, &UCombatComponent::Attack);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, CombatComponent, &UCombatComponent::Attack);
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, CombatComponent, &UCombatComponent::StopAttack);
 
 		// Reloading
@@ -169,10 +181,12 @@ void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
 
 		// WeaponEquip/Change
-		EnhancedInputComponent->BindAction(EquipPrimaryAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
-		EnhancedInputComponent->BindAction(EquipSecondaryAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
-		EnhancedInputComponent->BindAction(EquipMeleeAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
-		EnhancedInputComponent->BindAction(EquipThrowableAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Look);
+		EnhancedInputComponent->BindAction(EquipPrimaryAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Input_EquipPrimary);
+		EnhancedInputComponent->BindAction(EquipSecondaryAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Input_EquipSecondary);
+		EnhancedInputComponent->BindAction(EquipMeleeAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Input_EquipMelee);
+		EnhancedInputComponent->BindAction(EquipThrowableAction, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Input_EquipThrowable);
+
+		EnhancedInputComponent->BindAction(WeaponScroll, ETriggerEvent::Triggered, this, &AUnrealProjectCharacter::Input_ScrollWeapon);
 
 		// DroneAction
 		EnhancedInputComponent->BindAction(DroneActiveSkillAction, ETriggerEvent::Triggered, DroneComponent, &UDroneComponent::ActiveDroneSkill);

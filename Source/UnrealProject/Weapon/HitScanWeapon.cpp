@@ -13,9 +13,9 @@ void AHitScanWeapon::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AHitScanWeapon::OnAttack()
+void AHitScanWeapon::ExecuteFire()
 {
-	Super::OnAttack();
+	Super::ExecuteFire();
 
 	// 주인이 없다면 중단
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());

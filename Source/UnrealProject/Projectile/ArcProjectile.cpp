@@ -6,14 +6,16 @@
 #include "Kismet/GameplayStatics.h"
 
 
-void AArcProjectile::Launch(FVector ShootDirection)
+void AArcProjectile::Launch(FVector ShootDirection, float SpeedOverride)
 {
+	float FinalSpeed = (SpeedOverride > 0.0f) ? SpeedOverride : ProjectileMovement->InitialSpeed;
+
 	if (ProjectileMovement) {
 		// 입력 받은 방향으로 힘을 가함
-		ProjectileMovement->Velocity = ShootDirection * ProjectileMovement->InitialSpeed;
+		ProjectileMovement->Velocity = ShootDirection * FinalSpeed;
 
 		// 곡사는 중력을 킴
-		ProjectileMovement->bShouldBounce = true;
+		ProjectileMovement->ProjectileGravityScale = 1.f;
 	}
 }
 
@@ -39,7 +41,12 @@ void AArcProjectile::LaunchTowards(FVector StartLoc, AActor* TargetActor)
 
 	if (bHasAimSolution) {
 		UE_LOG(LogTemp, Log, TEXT("Aim Success"));
-		ProjectileMovement->Velocity = OutLaunchVelocity;
+
+		FVector LaunchDirection = OutLaunchVelocity.GetSafeNormal();
+
+		float LaunchSpeed = OutLaunchVelocity.Size();
+
+		Launch(LaunchDirection, LaunchSpeed);
 	}
 	else {
 		// 계산 실패 시 부모의 직사로 대체

@@ -35,7 +35,7 @@ protected:
 
 protected:
 	// 투사체의 기본 데미지
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Damage")
 	float BaseDamage = 20.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
@@ -62,8 +62,22 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Combat|Damage", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
 	float InnerRadius = 100.0f; // 100% 데미지 반경
 
+	// 폭발 조건 설정
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Explosion")
+	bool bExplodeOnTimer = false; // true면 수류탄처럼 시간에 의해 폭발
+
+	// 폭발 대기 시간 (수류탄 타이머)
+	UPROPERTY(EditDefaultsOnly, Category = "Combat|Explosion", meta = (EditCondition = "bExplodeOnTimer"))
+	float ExplosionDelay = 3.0f;
+
+	// 폭발 타이머 핸들
+	FTimerHandle ExplosionTimerHandle;
+
 protected:
 	virtual void DealDamage(const FHitResult& HitResult);
+
+	// 타이머가 다 되면 강제 폭발 함수
+	void TimeOutExplode();
 
 public:
 
@@ -89,7 +103,7 @@ public:
 	void Deactivate();
 
 	// 방향 벡터를 받아서 날아가는 로직
-	virtual void Launch(FVector ShootDirection);
+	virtual void Launch(FVector ShootDirection, float SpeedOverride = -1.0f);
 
 	// 타겟을 향해 날아가는 로직
 	virtual void LaunchTowards(FVector StartLoc, AActor* TargetActor);

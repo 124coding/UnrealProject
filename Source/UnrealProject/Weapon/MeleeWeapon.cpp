@@ -71,7 +71,7 @@ bool AMeleeWeapon::CanAttack()
 	return true;
 }
 
-void AMeleeWeapon::OnAttack()
+void AMeleeWeapon::ExecuteFire()
 {
 	// 중복 타격 목록 초기화
 	IgnoreActors.Empty();

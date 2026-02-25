@@ -48,9 +48,9 @@ void ARangedWeapon::Tick(float DeltaTime)
 	}
 }
 
-void ARangedWeapon::OnAttack()
+void ARangedWeapon::ExecuteFire()
 {
-	Super::OnAttack();
+	Super::ExecuteFire();
 
 	ConsumeAmmo();
 
@@ -110,16 +110,25 @@ void ARangedWeapon::OnAttack()
 
 void ARangedWeapon::StopAttack()
 {
+	Super::StopAttack();
+
 	BurstCount = 0;
 	TargetRecoilPitch = 0.0f;
 	CurrentRecoilPitch = 0.0f;
 }
 
-void ARangedWeapon::Reload()
+bool ARangedWeapon::CanReload()
 {
 	if (CurrentAmmoInClip >= MaxAmmoPerClip || bIsReloading) {
-		return;
+		return false;
 	}
+
+	return true;
+}
+
+void ARangedWeapon::Reload()
+{
+	if (!CanReload()) return;
 
 	// 재장전 시작
 	bIsReloading = true;
