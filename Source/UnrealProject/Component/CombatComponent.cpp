@@ -245,9 +245,7 @@ void UCombatComponent::StopAttack()
 void UCombatComponent::Reload() {
 	if (CurrentWeapon == nullptr) return;
 
-	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon);
-
-	if (RangedWeapon) RangedWeapon->Reload();
+	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon)) RangedWeapon->Reload();
 	else UE_LOG(LogTemp, Warning, TEXT("This weapon cant Reload"));
 }
 

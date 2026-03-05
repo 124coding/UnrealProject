@@ -12,6 +12,7 @@ AUnrealProjectProjectile::AUnrealProjectProjectile()
 	// Use a sphere as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(5.0f);
+	CollisionComp->SetSimulatePhysics(false);
 	// 이 부분은 에디터에서 직접 고르는게 필요 (Player용인지 Enemy용인지)
 	// CollisionComp->BodyInstance.SetCollisionProfileName("EnemyProjectile");
 	CollisionComp->OnComponentHit.AddDynamic(this, &AUnrealProjectProjectile::OnHit);		// set up a notification for when this component hits something blocking
@@ -157,13 +158,6 @@ void AUnrealProjectProjectile::OnPoolReturned_Implementation()
 
 	if (CollisionComp) {
 		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		CollisionComp->SetSimulatePhysics(false);
-	}
-
-	if (MeshComp)
-	{
-		MeshComp->SetSimulatePhysics(false);
-		MeshComp->SetPhysicsLinearVelocity(FVector::ZeroVector); // 관성 제거
 	}
 
 	SetActorHiddenInGame(true);

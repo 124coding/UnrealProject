@@ -43,14 +43,14 @@ FVector ASpawnVolume::GetRandomPointInVolume()
 			FVector CandidateLoc = NavLoc.Location;
 			CandidateLoc.Z += 100.0f;
 
-			// 스폰 위치에 Pawn이 있는지 확인
+			// 스폰 위치에 장애물이 있는지 확인
 			FCollisionQueryParams Params;
 			Params.AddIgnoredActor(this);
 
 			bool bHit = GetWorld()->OverlapBlockingTestByChannel(
 				CandidateLoc,
 				FQuat::Identity,
-				ECollisionChannel::ECC_Enemy,
+				ECollisionChannel::ECC_Visibility,
 				FCollisionShape::MakeSphere(50.0f), /* 현재 하드 코딩으로 50.0f 값이 들어가 있기에 추후 적의 크기에 맞춰서 수정 필요 */
 				Params
 			);

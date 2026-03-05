@@ -162,10 +162,18 @@ void ARangedWeapon::FinishReload()
 	UE_LOG(LogTemp, Log, TEXT("Reload Complete!"));
 }
 
+void ARangedWeapon::SetCurrentAmmoInClip(int32 SetCount)
+{
+	CurrentAmmoInClip = SetCount;
+
+	if (OnAmmoDelegate.IsBound()) {
+		OnAmmoDelegate.Broadcast(CurrentAmmoInClip);
+	}
+}
+
 bool ARangedWeapon::CanAttack()
 {
-	bool bBaseCan = Super::CanAttack();
-	if (!bBaseCan) return false;
+	if (!Super::CanAttack()) return false;
 
 	// 재장전중
 	if (bIsReloading)
@@ -198,51 +206,32 @@ void ARangedWeapon::ConsumeAmmo()
 bool ARangedWeapon::GetCrosshairTarget(FVector& OutHitLocation)
 {
 	APlayerController* PC = Cast<APlayerController>(GetInstigatorController());
-	if (!PC) {
-		UE_LOG(LogTemp, Warning, TEXT("CrossHairError"));
-		return false;
-	}
+	if (!PC || !PC->PlayerCameraManager) return false;
 
-	// 화면 크기 가져오기
-	int32 ViewportSizeX, ViewportSizeY;
-	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
+	// 카메라의 위치와 방향
+	FVector Start = PC->PlayerCameraManager->GetCameraLocation();
+	FVector WorldDirection = PC->PlayerCameraManager->GetCameraRotation().Vector();
 
-	// 화면 정중앙 좌표
-	FVector2D ScreenLocation(ViewportSizeX * 0.5f, ViewportSizeY * 0.5f);
+	// 사거리 계산
+	FVector End = Start + (WorldDirection * AttackRange);
 
-	// 2D 좌표를 3D 월드 좌표와 방향으로 변환
-	FVector WorldLocation, WorldDirection;
-	bool bSuccess = PC->DeprojectScreenPositionToWorld(
-		ScreenLocation.X, ScreenLocation.Y, WorldLocation, WorldDirection
+	FHitResult HitResult;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	QueryParams.AddIgnoredActor(GetOwner());
+
+	// 라인 트레이스 수행
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult, Start, End, ECC_Visibility, QueryParams
 	);
 
-	if (bSuccess) {
-		// 카메라에서 레이저 쏘기
-		FVector Start = PC->PlayerCameraManager->GetCameraLocation();;
-		FVector End = Start + (WorldDirection * AttackRange);
-
-		FHitResult HitResult;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this); // 무기는 무시
-		QueryParams.AddIgnoredActor(GetOwner());
-
-		GetWorld()->LineTraceSingleByChannel(
-			HitResult,
-			Start,
-			End,
-			ECollisionChannel::ECC_Visibility,
-			QueryParams
-		);
-
-		if (HitResult.bBlockingHit) {
-			OutHitLocation = HitResult.ImpactPoint;
-			return true;
-		}
-		else {
-			OutHitLocation = End; // 최대 사거리
-			return true;
-		}
+	if (bHit) {
+		OutHitLocation = HitResult.ImpactPoint;
 	}
-	return false;
+	else {
+		OutHitLocation = End;
+	}
+
+	return true;
 }
 

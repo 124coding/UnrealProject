@@ -52,9 +52,7 @@ public:
 		MaxAmmoPerClip++;
 	}
 
-	void SetCurrentAmmoInClip(int32 SetCount) {
-		CurrentAmmoInClip = SetCount;
-	}
+	void SetCurrentAmmoInClip(int32 SetCount);
 
 	int32 GetCurrentAmmoInClip() {
 		return CurrentAmmoInClip;

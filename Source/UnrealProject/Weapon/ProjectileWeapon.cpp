@@ -15,7 +15,7 @@ void AProjectileWeapon::BeginPlay()
 	Super::BeginPlay();
 
 	// 풀 초기화
-	ProjectilePool->InitializePool(ProjectileClass, MaxAmmoPerClip * 3, this);
+	ProjectilePool->InitializePool(ProjectileClass, MaxAmmoPerClip, this);
 }
 
 void AProjectileWeapon::ExecuteFire()

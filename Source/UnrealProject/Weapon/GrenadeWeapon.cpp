@@ -8,10 +8,10 @@
 
 void AGrenadeWeapon::BeginPlay()
 {
-	Super::BeginPlay();
-
 	MaxAmmoPerClip = 1;
 	CurrentAmmoInClip = MaxAmmoPerClip;
+
+	Super::BeginPlay();
 }
 
 FVector AGrenadeWeapon::CalculateLaunchDirection(FVector MuzzleLocation, FVector HitTarget) {

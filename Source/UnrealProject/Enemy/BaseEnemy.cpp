@@ -17,7 +17,7 @@
 ABaseEnemy::ABaseEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComp"));
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));
@@ -45,6 +45,7 @@ void ABaseEnemy::BeginPlay()
 	{
 		InitialMeshTransform = GetMesh()->GetRelativeTransform();
 		GetMesh()->SetCollisionProfileName(TEXT("Enemy"));
+		GetMesh()->SetSimulatePhysics(false);
 	}
 }
 
@@ -93,11 +94,11 @@ void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSi
 	FVector Start = GetMesh()->GetSocketLocation(SocketName);
 	FVector End = Start + (GetActorForwardVector() * 20.0f);
 
-	// 충돌 대상 설정 (Pawn만 감지하도록)
+	// 충돌 대상 설정 (Player만 감지하도록)
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Player));
 
-	// 자기 자신은 무시 (추후에 모든 적에 대해서도 무시가 필요)
+	// 자기 자신은 무시
 	TArray<AActor*> ActorsToIgnore;
 	ActorsToIgnore.Add(this);
 
@@ -141,17 +142,20 @@ void ABaseEnemy::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("EES_Normal"));
-	CurrentState = EEnemyState::EES_Normal;
-
-	if (AAIController* AIController = Cast<AAIController>(GetController())) {
-		if (UBrainComponent* Brain = AIController->GetBrainComponent())
-		{
-			Brain->ResumeLogic("Hit Reaction");
+	if (CurrentState == EEnemyState::EES_Stunned) {
+		if (AAIController* AIController = Cast<AAIController>(GetController())) {
+			if (UBrainComponent* Brain = AIController->GetBrainComponent())
+			{
+				Brain->ResumeLogic("Hit Reaction");
+			}
 		}
 	}
+	else if (CurrentState == EEnemyState::EES_Attacking) {
+		/* 다음 공격까지의 딜레이 주는 것도 가능*/
+	}
 
-	/* 다음 공격까지의 딜레이 주는 것도 가능*/
+	UE_LOG(LogTemp, Warning, TEXT("EES_Normal"));
+	CurrentState = EEnemyState::EES_Normal;
 }
 
 void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
@@ -160,8 +164,13 @@ void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
 	FVector Forward = GetActorForwardVector();
 
 	// 피격 지점 벡터(적의 위치 -> 때린 위치)
-	FVector ImpactLowered(ImpactPoint.X, ImpactPoint.Y, ImpactPoint.Z);
-	FVector ToHit = (ImpactLowered - GetActorLocation()).GetSafeNormal();
+	/*FVector ImpactLowered(ImpactPoint.X, ImpactPoint.Y, ImpactPoint.Z);
+	FVector ToHit = (ImpactLowered - GetActorLocation()).GetSafeNormal();*/
+
+	FVector EnemyLoc = GetActorLocation();
+	FVector ToHit = (ImpactPoint - EnemyLoc);
+	ToHit.Z = 0.f;  // Z축 간섭 제거
+	ToHit = ToHit.GetSafeNormal();
 
 	// 각도 구하기
 	// 0도: 정면, 180/-180도: 후면, 90도: 우측, -90도: 좌측
@@ -176,15 +185,15 @@ void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
 
 	UAnimMontage* MontageToPlay = nullptr;
 
-	if (Theta >= -80.0f && Theta <= 80.0f) {
+	if (Theta >= -70.0f && Theta <= 70.0f) {
 		MontageToPlay = HitReactMontage_Front;
 		UE_LOG(LogTemp, Warning, TEXT("Front Hit"));
 	}
-	else if (Theta >= -100.0f && Theta < -80.0f) {
+	else if (Theta >= -110.0f && Theta < -70.0f) {
 		MontageToPlay = HitReactMontage_Left;
 		UE_LOG(LogTemp, Warning, TEXT("Left Hit"));
 	}
-	else if (Theta > 80.0f && Theta <= 100.0f) {
+	else if (Theta > 70.0f && Theta <= 110.0f) {
 		MontageToPlay = HitReactMontage_Right;
 		UE_LOG(LogTemp, Warning, TEXT("Right Hit"));
 	}
@@ -249,7 +258,6 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 
 	// 물리 끄기
 	if (GetMesh()) {
-		GetMesh()->SetSimulatePhysics(false);
 		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 		GetMesh()->SetRelativeTransform(InitialMeshTransform);
@@ -302,7 +310,6 @@ void ABaseEnemy::OnPoolReturned_Implementation()
 	// 물리 끄기
 	if (GetMesh())
 	{
-		GetMesh()->SetSimulatePhysics(false);
 		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector); // 관성 제거
 	}

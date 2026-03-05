@@ -71,15 +71,14 @@ void UObjectPoolComponent::ReturnToPool(AActor* ActorToReturn)
 AActor* UObjectPoolComponent::CreateNewObject() {
 	if (!PooledClass) return nullptr;
 
-	UWorld* World = GetWorld();
-	if (!World) return nullptr;
+	if (!GetWorld()) return nullptr;
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = GetOwner();
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// 생성하자마자 비활성화
-	AActor* NewActor = World->SpawnActor<AActor>(PooledClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	AActor* NewActor = GetWorld()->SpawnActor<AActor>(PooledClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
 	if (NewActor) {
 

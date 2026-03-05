@@ -21,6 +21,22 @@ ABaseWeapon::ABaseWeapon()
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	WeaponMesh->SetupAttachment(RootComponent);
 
+	TArray<USceneComponent*> LocalChildren;
+	WeaponMesh->GetChildrenComponents(true, LocalChildren);
+
+	// 몸체 물리 바디
+	WeaponMesh->SetCollisionObjectType(ECC_PhysicsBody);
+
+	// WeaponMesh의 자식들 모두 CollisionChannel 변경
+	for (USceneComponent* Child : LocalChildren)
+	{
+		UPrimitiveComponent* PrimitiveChild = Cast<UPrimitiveComponent>(Child);
+		if (PrimitiveChild)
+		{
+			PrimitiveChild->SetCollisionObjectType(ECC_PhysicsBody);
+		}
+	}
+
 }
 
 // Called when the game starts or when spawned
@@ -160,16 +176,16 @@ void ABaseWeapon::SetWeaponState(EWeaponState NewState)
 {
 	CurrentState = NewState;
 
+	if (!WeaponMesh) return;
+
 	switch (CurrentState) {
 	case EWeaponState::Equipped:
 
-		if (!WeaponMesh) return;
 		UE_LOG(LogTemp, Log, TEXT("Weapon Equipped"));
 
 		// 물리 끄기
 		WeaponMesh->SetSimulatePhysics(false);
 		WeaponMesh->SetEnableGravity(false);
-		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 		WeaponMesh->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		WeaponMesh->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
@@ -183,7 +199,7 @@ void ABaseWeapon::SetWeaponState(EWeaponState NewState)
 		WeaponMesh->SetRelativeRotation(FRotator::ZeroRotator);
 
 		// 몸체 WorldStatic
-		WeaponMesh->SetCollisionObjectType(ECC_WorldStatic);
+		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
 		if (AreaSphere) AreaSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
@@ -195,8 +211,6 @@ void ABaseWeapon::SetWeaponState(EWeaponState NewState)
 		break;
 	
 	case EWeaponState::Dropped:
-	
-		if (!WeaponMesh) return;
 
 		UE_LOG(LogTemp, Log, TEXT("Weapon Dropped"));
 
@@ -204,9 +218,6 @@ void ABaseWeapon::SetWeaponState(EWeaponState NewState)
 		WeaponMesh->SetSimulatePhysics(true);
 		WeaponMesh->SetEnableGravity(true);
 		WeaponMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-
-		// 몸체 물리 바디
-		WeaponMesh->SetCollisionObjectType(ECC_PhysicsBody);
 
 		WeaponMesh->SetCollisionResponseToAllChannels(ECR_Block); // 기본적으로 다 막음
 		WeaponMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore); // Pawn 통과
