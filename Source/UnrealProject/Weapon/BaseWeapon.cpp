@@ -120,6 +120,8 @@ void ABaseWeapon::ExecuteFire()
 		return;
 	}
 
+	if (OwnerCharacter->IsDead()) StopAttack();
+
 	// 공격 소리 존재 시 소리 출력
 	if (AttackSound != nullptr)
 	{

@@ -2,7 +2,7 @@
 
 
 #include "ObjectPoolComponent.h"
-#include "../PoolableInterface.h"
+#include "../Interface/PoolableInterface.h"
 
 // Sets default values for this component's properties
 UObjectPoolComponent::UObjectPoolComponent()

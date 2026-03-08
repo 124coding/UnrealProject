@@ -8,6 +8,7 @@
 #include "Component/ObjectPoolComponent.h"
 #include "SpawnVolume.h"
 #include "Enemy/BaseEnemy.h"
+#include "DirectorDataSubsystem.h"
 
 AUnrealProjectGameMode::AUnrealProjectGameMode()
 	: Super()
@@ -72,6 +73,14 @@ void AUnrealProjectGameMode::BeginPlay()
 			AllSpawnVolumes.Add(Vol);
 		}
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		DirectorTimerHandle,
+		this,
+		&AUnrealProjectGameMode::DirectorUpdateLoop,
+		0.5f,
+		true
+	);
 }
 
 void AUnrealProjectGameMode::RestartPlayer(AController* NewPlayer)
@@ -172,6 +181,110 @@ void AUnrealProjectGameMode::SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnC
 	}
 }
 
+void AUnrealProjectGameMode::ChangePhase(EDirectorPhase NewPhase)
+{
+	CurrentPhase = NewPhase;
+	TimeInCurrentPhase = 0.0f; // 페이즈가 바뀔 때마다 머문 시간 초기화
+	SpawnCooldown = 0.0f;      // 스폰 쿨타임도 초기화
+}
+
+void AUnrealProjectGameMode::DirectorUpdateLoop()
+{
+	UDirectorDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UDirectorDataSubsystem>();
+	if (!DataSubsystem) return;
+
+	float DirectorInterval = 0.5f; // 타이머 주기와 동일
+	TimeInCurrentPhase += DirectorInterval;
+
+	float CurrentStress = DataSubsystem->GetNormalizedStress(); // 0.0 ~ 1.0
+
+	// 타겟 지정용 플레이어
+	AActor* PlayerActor = UGameplayStatics::GetPlayerPawn(this, 0);
+
+	switch (CurrentPhase) {
+	case EDirectorPhase::Relax:
+
+		// Stress 감소
+		DataSubsystem->DecayStress(DirectorInterval);
+
+		if (TimeInCurrentPhase > MaxRelaxTime)
+		{
+			ChangePhase(EDirectorPhase::BuildUp);
+		}
+		break;
+
+	case EDirectorPhase::BuildUp:
+
+		// 산발적 스폰
+		SpawnCooldown -= DirectorInterval;
+
+		if (SpawnCooldown <= 0.0f)
+		{
+			if (NormalEnemyClasses.Num() > 0)
+			{
+				// 0번 인덱스부터 배열의 마지막 인덱스 사이에서 랜덤 뽑기
+				int32 RandomIndex = FMath::RandRange(0, NormalEnemyClasses.Num() - 1);
+				TSubclassOf<AActor> SelectedClass = NormalEnemyClasses[RandomIndex];
+
+				// 뽑힌 랜덤 클래스로 스폰
+				SpawnEnemyInGroup(CurrentActiveGroupID, FMath::RandRange(2, 3), SelectedClass, PlayerActor);
+			}
+			SpawnCooldown = 5.0f;
+		}
+
+		// 플레이어의 스트레스가 80%를 넘거나, 빌드업 시간이 40초를 넘으면 Peak
+		if (CurrentStress >= 0.8f || TimeInCurrentPhase > 40.0f)
+		{
+			ChangePhase(EDirectorPhase::Peak);
+		}
+		break;
+
+	case EDirectorPhase::Peak:
+
+		SpawnCooldown -= DirectorInterval;
+		if (SpawnCooldown <= 0.0f)
+		{
+			if (HordeEnemyClasses.Num() > 0)
+			{
+				// 한 번에 지정된 숫자(PeakSpawnCount)만큼 스폰하되, 
+				// 매번 1마리씩 다른 종류를 뽑아서 호출
+				for (int32 i = 0; i < PeakSpawnCount; i++)
+				{
+					int32 RandomIndex = FMath::RandRange(0, HordeEnemyClasses.Num() - 1);
+					TSubclassOf<AActor> SelectedClass = HordeEnemyClasses[RandomIndex];
+
+					// 1마리씩 개별 스폰
+					SpawnEnemyInGroup(CurrentActiveGroupID, 1, SelectedClass, PlayerActor);
+				}
+			}
+			SpawnCooldown = 3.0f;
+		}
+
+		if (TimeInCurrentPhase > PeakDuration)
+		{
+			ChangePhase(EDirectorPhase::FadeOut);
+		}
+		break;
+
+	case EDirectorPhase::FadeOut:
+
+		int32 AliveEnemies = GetAliveEnemyCount();
+
+		// 적을 다 잡았거나, 너무 오래 지연(30초)되면 강제로 휴식기
+		if (AliveEnemies <= 0 || TimeInCurrentPhase > 30.0f)
+		{
+			DataSubsystem->CurrentPlayerStress = 0.0f; // 스트레스 초기화
+			ChangePhase(EDirectorPhase::Relax);
+		}
+		break;
+	}
+}
+
+int32 AUnrealProjectGameMode::GetAliveEnemyCount() const
+{
+	return ActiveEnemyCount;
+}
+
 AActor* AUnrealProjectGameMode::SpawnProjectileFromPool(TSubclassOf<AActor> ProjectileClass, FVector Location, FRotator Rotation)
 {
 	if (!IsValid(ProjectileClass)) {
@@ -194,10 +307,17 @@ AActor* AUnrealProjectGameMode::SpawnProjectileFromPool(TSubclassOf<AActor> Proj
 	return Projectile;
 }
 
+void AUnrealProjectGameMode::SetActiveSpawnGroup(int32 NewGroupID)
+{
+	CurrentActiveGroupID = NewGroupID;
+	/* 여기서 새 구역 진입 UI 알림 등을 띄우기도 가능 (델리게이트 식)*/
+}
+
 AActor* AUnrealProjectGameMode::SpawnEnemyFromPool(TSubclassOf<AActor> EnemyClass, FVector Location)
 {
 	if (UObjectPoolComponent** FoundPool = EnemyPoolMap.Find(EnemyClass)) {
 		UE_LOG(LogTemp, Warning, TEXT("Spawn this type of class: %s"), *EnemyClass->GetName());
+		ActiveEnemyCount++;
 		return (*FoundPool)->SpawnFromPool(Location, FRotator::ZeroRotator);
 	}
 

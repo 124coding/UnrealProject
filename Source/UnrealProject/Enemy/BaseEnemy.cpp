@@ -12,6 +12,7 @@
 #include "BrainComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "../Component/ObjectPoolComponent.h"
+#include "../UnrealProjectGameMode.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -262,6 +263,7 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 		GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 		GetMesh()->SetRelativeTransform(InitialMeshTransform);
 		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		GetMesh()->bPauseAnims = false;
 
 		if (GetCapsuleComponent()) {
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -361,14 +363,38 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 	}
 
 	// 충돌 끔
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 
 	// 래그돌 실행
-	GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
-	GetMesh()->SetSimulatePhysics(true);
+	/*GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
+	GetMesh()->SetSimulatePhysics(true);*/
+
+	// 사망 애니메이션
+	float DeathAnimDuration = PlayAnimMontage(DeathMontage);
+	if (DeathAnimDuration > 0.f)
+	{
+		// 애니메이션이 끝나기 직전에 애니메이션을 굳히기
+		GetWorldTimerManager().SetTimer(AnimFreezeTimerHandle, this, &ABaseEnemy::FreezeAnimation, DeathAnimDuration - 0.1f, false);
+	}
 
 	GetWorldTimerManager().SetTimer(ReturnTimerHandle, this, &ABaseEnemy::Deactivate, 5.0f, false);
+
+	AAIController* AIC = Cast<AAIController>(GetController());
+	if (AIC)
+	{
+		// BrainComponent(비헤이비어 트리)가 있다면 스톱
+		if (UBrainComponent* Brain = AIC->GetBrainComponent())
+		{
+			Brain->StopLogic("Death");
+		}
+	}
+
+	if (AUnrealProjectGameMode* GM = Cast<AUnrealProjectGameMode>(GetWorld()->GetAuthGameMode()))
+	{
+		// 적이 죽었으므로 카운트 감소
+		GM->ActiveEnemyCount = FMath::Max(0, GM->ActiveEnemyCount - 1);
+	}
 
 	// 5초 뒤에 삭제
 	//SetLifeSpan(5.0f);
@@ -385,5 +411,13 @@ void ABaseEnemy::Deactivate()
 	{
 		// 만약 풀 없이 생성된 경우라면 그냥 파괴
 		Destroy();
+	}
+}
+
+void ABaseEnemy::FreezeAnimation()
+{
+	if (GetMesh())
+	{
+		GetMesh()->bPauseAnims = true;
 	}
 }

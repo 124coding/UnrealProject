@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "../Interactable.h"
+#include "../Interface/Interactable.h"
 #include "BaseWeapon.generated.h"
 
 UENUM(BlueprintType)

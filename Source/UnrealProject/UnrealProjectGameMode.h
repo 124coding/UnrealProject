@@ -6,6 +6,15 @@
 #include "GameFramework/GameModeBase.h"
 #include "UnrealProjectGameMode.generated.h"
 
+UENUM(BlueprintType)
+enum class EDirectorPhase : uint8
+{
+	Relax		UMETA(DisplayName = "Relax"),
+	BuildUp		UMETA(DisplayName = "BuildUp"),
+	Peak		UMETA(DisplayName = "Peak"),
+	FadeOut		UMETA(DisplayName = "FadeOut")
+};
+
 UCLASS(minimalapi)
 class AUnrealProjectGameMode : public AGameModeBase
 {
@@ -50,10 +59,53 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Pool Setup")
 	TMap<TSubclassOf<AActor>, int32> InitialEnemyProjectilePoolConfig;
 
-public:
-	AActor* SpawnProjectileFromPool(TSubclassOf<AActor> ProjectileClass, FVector Location, FRotator Rotation);
+	// 디렉터 스폰 클래스 설정
+	UPROPERTY(EditDefaultsOnly, Category = "Director|Classes")
+	TArray<TSubclassOf<AActor>> NormalEnemyClasses; // 빌드업 때 나올 일반 적들
+
+	UPROPERTY(EditDefaultsOnly, Category = "Director|Classes")
+	TArray<TSubclassOf<AActor>> HordeEnemyClasses;  // 피크 때 쏟아질 특수/물량 적들
+
+	// 디렉터 밸런스 설정
+	UPROPERTY(EditDefaultsOnly, Category = "Director|Balance")
+	float MaxRelaxTime = 30.0f; // 휴식기 최대 시간
+
+	UPROPERTY(EditDefaultsOnly, Category = "Director|Balance")
+	float PeakDuration = 15.0f; // 웨이브 지속 시간
+
+	UPROPERTY(EditDefaultsOnly, Category = "Director|Balance")
+	int32 PeakSpawnCount = 10;  // 웨이브 때 한 번에 스폰할 마릿수
+
+	FTimerHandle DirectorTimerHandle;
+
+	float TimeInCurrentPhase = 0.0f; // 현재 페이즈에 머문 시간
+	float SpawnCooldown = 0.0f;      // 스폰 간격 조절용 쿨타임
+
+	void DirectorUpdateLoop();
 
 public:
+	// 현재 페이즈
+	EDirectorPhase CurrentPhase = EDirectorPhase::Relax;
+
+	// 현재 맵에 살아있는(활성화된) 적의 총 마릿수
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Director")
+	int32 ActiveEnemyCount = 0;
+
+	// 디렉터 루프에서 호출할 Getter 함수
+	int32 GetAliveEnemyCount() const;
+
+	AActor* SpawnProjectileFromPool(TSubclassOf<AActor> ProjectileClass, FVector Location, FRotator Rotation);
+
+	// 트리거가 밟힐 때 호출할 함수
+	UFUNCTION(BlueprintCallable)
+	void SetActiveSpawnGroup(int32 NewGroupID);
+
+	void ChangePhase(EDirectorPhase NewPhase);
+
+public:
+	// 디렉터가 현재 스폰 타겟으로 삼을 그룹 ID
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Director")
+	int32 CurrentActiveGroupID = 0;
 
 	// 외부에서 호출하는 통합 스폰 함수
 	UFUNCTION(BlueprintCallable)

@@ -17,9 +17,10 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "../DirectorDataSubsystem.h"
 
 #include "DrawDebugHelpers.h"
-#include "../Interactable.h"
+#include "../Interface/Interactable.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -208,6 +209,23 @@ bool AUnrealProjectCharacter::IsWeaponEquipped() const
 void AUnrealProjectCharacter::GetHit_Implementation(const FVector& ImpactPoint)
 {
 	UE_LOG(LogTemp, Warning, TEXT("Player Hit"));
+
+}
+
+float AUnrealProjectCharacter::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	if (ActualDamage > 0.0f)
+	{
+		if (UDirectorDataSubsystem* DataSubSystem = GetWorld()->GetSubsystem<UDirectorDataSubsystem>())
+		{
+			// 데미지 수치의 반만큼 스트레스 증가
+			DataSubSystem->AddStressEvent(ActualDamage * 0.5f);
+		}
+	}
+
+	return ActualDamage;
 }
 
 void AUnrealProjectCharacter::Revive(float RevivePercent)

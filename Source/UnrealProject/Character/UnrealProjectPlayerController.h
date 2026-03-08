@@ -37,6 +37,14 @@ protected:
 
 
 protected:
+	// Phase Debug 확인용 위젯
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DirectorDebug")
+	TSubclassOf<class UDirectorDebugWidget> DirectorDebugWidgetClass;
+
+	UPROPERTY()
+	UDirectorDebugWidget* DirectorDebugWidgetInstance;
+
+	// 게임 오버 위젯
 	UPROPERTY(EditDefaultsOnly, Category = "GameOver")
 	TSubclassOf<UUserWidget> GameOverWidgetClass;
 

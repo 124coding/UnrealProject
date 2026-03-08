@@ -4,7 +4,7 @@
 #include "HitScanWeapon.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h" // 디버그 선 그리기
-#include "../HitInterface.h"
+#include "../Interface/HitInterface.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "../UnrealProject.h"
 

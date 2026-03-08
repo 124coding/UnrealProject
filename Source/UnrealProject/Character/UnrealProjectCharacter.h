@@ -6,7 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
-#include "../HitInterface.h"
+#include "../Interface/HitInterface.h"
 #include "UnrealProjectCharacter.generated.h"
 
 class UInputComponent;
@@ -158,6 +158,8 @@ public:
 	bool IsWeaponEquipped() const;
 
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	UFUNCTION()
 	void Revive(float RevivePercent);

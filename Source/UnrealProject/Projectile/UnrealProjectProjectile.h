@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "../PoolableInterface.h"
+#include "../Interface/PoolableInterface.h"
 #include "UnrealProjectProjectile.generated.h"
 
 class USphereComponent;

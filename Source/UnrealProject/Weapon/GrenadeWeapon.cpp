@@ -5,6 +5,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "../Character/UnrealProjectCharacter.h"
 #include "../Component/CombatComponent.h"
+#include "../DirectorDataSubsystem.h"
 
 void AGrenadeWeapon::BeginPlay()
 {
@@ -73,5 +74,10 @@ void AGrenadeWeapon::StopAttack()
 				PlayerCombat->EquipWeaponBySlot(EWeaponSlot::Primary);
 			}
 		}
+	}
+
+	// 수류탄 투척 시 스트레스 10 증가
+	if (UDirectorDataSubsystem* DataSubSystem = GetWorld()->GetSubsystem<UDirectorDataSubsystem>()) {
+		DataSubSystem->AddStressEvent(10.0f);
 	}
 }

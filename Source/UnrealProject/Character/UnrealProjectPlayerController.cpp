@@ -5,6 +5,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
+#include "../UI/DirectorDebugWidget.h"
 
 void AUnrealProjectPlayerController::ChangeInputContext(bool bIsDowned)
 {
@@ -52,5 +53,14 @@ void AUnrealProjectPlayerController::BeginPlay()
 	{
 		// add the mapping context so we get controls
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	}
+
+	if (DirectorDebugWidgetClass)
+	{
+		DirectorDebugWidgetInstance = CreateWidget<UDirectorDebugWidget>(this, DirectorDebugWidgetClass);
+		if (DirectorDebugWidgetInstance)
+		{
+			DirectorDebugWidgetInstance->AddToViewport();
+		}
 	}
 }

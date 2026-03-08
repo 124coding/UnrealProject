@@ -5,8 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../Component/AttributeComponent.h"
-#include "../HitInterface.h"
-#include "../PoolableInterface.h"
+#include "../Interface/HitInterface.h"
+#include "../Interface/PoolableInterface.h"
 #include "BaseEnemy.generated.h"
 
 UENUM(BlueprintType)
@@ -96,6 +96,13 @@ protected:
 	// 오른쪽 맞음
 	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
 	UAnimMontage* HitReactMontage_Right;
+
+	UPROPERTY(EditAnywhere, Category = "Combat|Death")
+	UAnimMontage* DeathMontage;
+
+	// 애니메이션을 굳히기 위한 타이머 핸들 및 함수
+	FTimerHandle AnimFreezeTimerHandle;
+	void FreezeAnimation();
 
 protected:
 	// 공격 사거리
