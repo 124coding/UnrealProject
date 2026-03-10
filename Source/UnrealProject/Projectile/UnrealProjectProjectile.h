@@ -5,16 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "../Interface/PoolableInterface.h"
+#include "../EnumTypes/WeaponTypes.h"
 #include "UnrealProjectProjectile.generated.h"
 
 class USphereComponent;
 class UProjectileMovementComponent;
-
-UENUM(BlueprintType)
-enum class EDamageMethod : uint8 {
-	SingleTarget	UMETA(DisplayName = "SingleTarget"),
-	RadialDamage	UMETA(DisplayName = "RadialDamage")
-};
 
 UCLASS(config=Game)
 class AUnrealProjectProjectile : public AActor, public IPoolableInterface

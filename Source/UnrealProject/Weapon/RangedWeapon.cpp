@@ -8,6 +8,7 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "../UnrealProject.h"
+#include "../Component/CombatComponent.h"
 
 ARangedWeapon::ARangedWeapon()
 {
@@ -17,6 +18,8 @@ ARangedWeapon::ARangedWeapon()
 void ARangedWeapon::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CurrentAmmoInClip = MaxAmmoPerClip;
 }
 
 void ARangedWeapon::Tick(float DeltaTime)
@@ -51,6 +54,10 @@ void ARangedWeapon::Tick(float DeltaTime)
 void ARangedWeapon::ExecuteFire()
 {
 	Super::ExecuteFire();
+
+	if (CurrentAmmoInClip <= 0) {
+		StopAttack();
+	}
 
 	ConsumeAmmo();
 
@@ -126,9 +133,14 @@ bool ARangedWeapon::CanReload()
 	return true;
 }
 
-void ARangedWeapon::Reload()
+void ARangedWeapon::Reload(int32 AvailableReserveAmmo)
 {
-	if (!CanReload()) return;
+	if (!CanReload() || AvailableReserveAmmo <= 0) return;
+
+	int32 RoomInClip = MaxAmmoPerClip - CurrentAmmoInClip;
+	if (RoomInClip <= 0) return;
+
+	AmmoToReload = FMath::Min(RoomInClip, AvailableReserveAmmo);
 
 	// 재장전 시작
 	bIsReloading = true;
@@ -139,7 +151,6 @@ void ARangedWeapon::Reload()
 		UGameplayStatics::PlaySoundAtLocation(this, ReloadSound, GetActorLocation());
 	}
 
-	FTimerHandle ReloadTimerHandle;
 	GetWorldTimerManager().SetTimer(
 		ReloadTimerHandle,
 		this,
@@ -152,12 +163,20 @@ void ARangedWeapon::Reload()
 void ARangedWeapon::FinishReload()
 {
 	bIsReloading = false; // 상태 해제
-	CurrentAmmoInClip = MaxAmmoPerClip; // 탄약 채움
+
+	CurrentAmmoInClip += AmmoToReload; // 탄약 채움
 
 	if (OnAmmoDelegate.IsBound())
 	{
 		OnAmmoDelegate.Broadcast(CurrentAmmoInClip);
 	}
+
+	if (OnWeaponReloadFinished.IsBound())
+	{
+		OnWeaponReloadFinished.Broadcast(AmmoToReload);
+	}
+
+	AmmoToReload = 0;
 
 	UE_LOG(LogTemp, Log, TEXT("Reload Complete!"));
 }
@@ -233,5 +252,22 @@ bool ARangedWeapon::GetCrosshairTarget(FVector& OutHitLocation)
 	}
 
 	return true;
+}
+
+void ARangedWeapon::AddAmmoToClip(int32 AmmoToAdd)
+{
+	CurrentAmmoInClip = FMath::Clamp(CurrentAmmoInClip + AmmoToAdd, 0, MaxAmmoPerClip);
+}
+
+void ARangedWeapon::CancelReload()
+{
+	if (bIsReloading)
+	{
+		bIsReloading = false;
+		AmmoToReload = 0;
+
+		// 진행 중이던 타이머를 끄기
+		GetWorldTimerManager().ClearTimer(ReloadTimerHandle);
+	}
 }
 

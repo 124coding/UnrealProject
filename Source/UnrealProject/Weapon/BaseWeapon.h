@@ -5,30 +5,8 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "../Interface/Interactable.h"
+#include "../EnumTypes/WeaponTypes.h"
 #include "BaseWeapon.generated.h"
-
-UENUM(BlueprintType)
-enum class EWeaponState : uint8 {
-	Equipped	UMETA(DisplayName = "Equipped"),
-	Dropped		UMETA(DisplayName = "Dropped")
-};
-
-UENUM(BlueprintType)
-enum class EWeaponFireMode : uint8
-{
-	Single	UMETA(DisplayName = "Single"),
-	Burst	UMETA(DisplayName = "Burst"),
-	Auto	UMETA(DisplayName = "Auto")
-};
-
-UENUM(BlueprintType)
-enum class EWeaponSlot : uint8 {
-	Primary		UMETA(DisplayName = "Primary Weapon"),
-	Secondary	UMETA(DisplayName = "Secondary Weapon"),
-	Melee		UMETA(DisplayName = "Melee Weapon"),
-	Throwable	UMETA(DisplayName = "Throwable"),
-	MAX			UMETA(Hidden)
-};
 
 UCLASS()
 class UNREALPROJECT_API ABaseWeapon : public AActor, public IInteractable

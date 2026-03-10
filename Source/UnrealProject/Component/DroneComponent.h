@@ -4,36 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "../EnumTypes/DroneTypes.h"
 #include "DroneComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDroneReviveComplete, float, RevivePercent);
-
-UENUM(BlueprintType)
-enum class EDroneState : uint8 {
-	Idle,		// 평상 시
-	Reviving	// 부활 작업 중
-};
-
-UENUM(BlueprintType)
-enum class EDroneActiveSkill : uint8 {
-	None		    UMETA(DisplayName = "None"),
-	Knockback		UMETA(DisplayName = "Explosive Blast"),
-	BerserkerBuff	UMETA(DisplayName = "BerserkerBuff") // 추후 구현
-};
-
-UENUM(BlueprintType)
-enum class EDroneUpgradeType : uint8 {
-	Range			UMETA(DisplayName = "Range"),
-	Force			UMETA(DisplayName = "Knockback Force"),
-	Cooldown		UMETA(DisplayName = "Cooldown Reduction"),
-	UnlockAttack	UMETA(DisplayName = "Unlock Auto Attack"),
-	UnlockHeal		UMETA(DisplayName = "Unlock Heal"),
-	AttackDamage	UMETA(DisplayName = "Attack Damage"),
-	AttackSpeed		UMETA(DisplayName = "Attack Speed"),
-	HealAmount		UMETA(DisplayName = "Heal Amount"),
-	HealInterval	UMETA(DisplayName = "HealInterval"),
-	ReviveAmount	UMETA(DisplayName = "ReviveAmount")
-};
 
 // 드론의 모든 스탯과 기능 잠금 여부를 관리하는 구조체 <-- 추후 능력 확장을 위함
 USTRUCT(BlueprintType) 

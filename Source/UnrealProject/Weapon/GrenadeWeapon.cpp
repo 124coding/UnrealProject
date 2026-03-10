@@ -10,7 +10,6 @@
 void AGrenadeWeapon::BeginPlay()
 {
 	MaxAmmoPerClip = 1;
-	CurrentAmmoInClip = MaxAmmoPerClip;
 
 	Super::BeginPlay();
 }
@@ -71,7 +70,7 @@ void AGrenadeWeapon::StopAttack()
 	if (MaxAmmoPerClip <= 0) {
 		if (AUnrealProjectCharacter* Player = Cast<AUnrealProjectCharacter>(GetOwner())) {
 			if (UCombatComponent* PlayerCombat = Player->FindComponentByClass<UCombatComponent>()) {
-				PlayerCombat->EquipWeaponBySlot(EWeaponSlot::Primary);
+				PlayerCombat->DiscardEmptyWeapon();
 			}
 		}
 	}

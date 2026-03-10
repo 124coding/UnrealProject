@@ -4,15 +4,21 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+#include "EnumTypes/DirectorTypes.h"
 #include "UnrealProjectGameMode.generated.h"
 
-UENUM(BlueprintType)
-enum class EDirectorPhase : uint8
+USTRUCT(BlueprintType)
+struct FEnemySpawnInfo
 {
-	Relax		UMETA(DisplayName = "Relax"),
-	BuildUp		UMETA(DisplayName = "BuildUp"),
-	Peak		UMETA(DisplayName = "Peak"),
-	FadeOut		UMETA(DisplayName = "FadeOut")
+	GENERATED_BODY()
+
+	// 스폰할 적 클래스
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn")
+	TSubclassOf<AActor> EnemyClass;
+
+	// 등장 확률 (가중치)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn", meta = (ClampMin = "0.0"))
+	float SpawnWeight = 1.0f;
 };
 
 UCLASS(minimalapi)
@@ -61,10 +67,10 @@ protected:
 
 	// 디렉터 스폰 클래스 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Director|Classes")
-	TArray<TSubclassOf<AActor>> NormalEnemyClasses; // 빌드업 때 나올 일반 적들
+	TArray<FEnemySpawnInfo> NormalEnemyList; // 빌드업 때 나올 일반 적들
 
 	UPROPERTY(EditDefaultsOnly, Category = "Director|Classes")
-	TArray<TSubclassOf<AActor>> HordeEnemyClasses;  // 피크 때 쏟아질 특수/물량 적들
+	TArray<FEnemySpawnInfo> HordeEnemyList;  // 피크 때 쏟아질 특수/물량 적들
 
 	// 디렉터 밸런스 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Director|Balance")
@@ -82,6 +88,9 @@ protected:
 	float SpawnCooldown = 0.0f;      // 스폰 간격 조절용 쿨타임
 
 	void DirectorUpdateLoop();
+
+private:
+	TSubclassOf<AActor> GetRandomEnemyClass(const TArray<FEnemySpawnInfo>& SpawnList);
 
 public:
 	// 현재 페이즈

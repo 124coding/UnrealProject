@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "BaseWeapon.h"
 #include "Camera/CameraShakeBase.h"
+
+#include "../EnumTypes/WeaponTypes.h"
+
 #include "RangedWeapon.generated.h"
 
 /**
@@ -12,6 +15,7 @@
  */
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAmmo, int32, CurrentAmmo);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponReloadFinished, int32, AmmoConsumed);
 
 UCLASS()
 class UNREALPROJECT_API ARangedWeapon : public ABaseWeapon
@@ -32,7 +36,7 @@ public:
 
 	// 재장전
 	virtual bool CanReload();
-	virtual void Reload();
+	virtual void Reload(int32 AvailableReserveAmmo);
 
 	void FinishReload();
 
@@ -68,6 +72,9 @@ protected:
 	// 화면 중앙 트레이스 함수
 	bool GetCrosshairTarget(FVector& OutHitLocation);
 
+	// 컴포넌트가 계산한 총알을 탄창에 채워넣는 함수
+	void AddAmmoToClip(int32 AmmoToAdd);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	USoundBase* ReloadSound;
@@ -80,6 +87,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "RangedWeapon|Stats")
 	float ReloadTime = 1.5f;
+
+	// 재장전 타이머가 끝날 때 탄창에 실제로 더해줄 임시 총알 수
+	int32 AmmoToReload = 0;
 
 	// 탄퍼짐 필요 시 고려
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "RangedWeapon|Stats")
@@ -108,6 +118,8 @@ protected:
 	// 장전 중인지 여부
 	bool bIsReloading = false;
 
+	FTimerHandle ReloadTimerHandle;
+
 	// 몇 발 연속 쏘고 있는지
 	int32 BurstCount = 0;
 
@@ -118,6 +130,17 @@ protected:
 	float CurrentRecoilPitch = 0.0f;
 
 public:
+	// 장전을 강제로 멈추는 함수
+	void CancelReload();
+
+	// 이 무기가 소모하는 총알의 종류
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Ammo")
+	EAmmoType WeaponAmmoType = EAmmoType::EAT_AssaultRifle;
+
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnAmmo OnAmmoDelegate;
+
+	// 장전 완료 델리게이트 변수
+	UPROPERTY()
+	FOnWeaponReloadFinished OnWeaponReloadFinished;
 };

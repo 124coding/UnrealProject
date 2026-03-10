@@ -220,14 +220,15 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 
 		if (SpawnCooldown <= 0.0f)
 		{
-			if (NormalEnemyClasses.Num() > 0)
+			if (NormalEnemyList.Num() > 0)
 			{
-				// 0번 인덱스부터 배열의 마지막 인덱스 사이에서 랜덤 뽑기
-				int32 RandomIndex = FMath::RandRange(0, NormalEnemyClasses.Num() - 1);
-				TSubclassOf<AActor> SelectedClass = NormalEnemyClasses[RandomIndex];
+				// 랜덤 뽑기 함수
+				TSubclassOf<AActor> SelectedClass = GetRandomEnemyClass(NormalEnemyList);
 
 				// 뽑힌 랜덤 클래스로 스폰
-				SpawnEnemyInGroup(CurrentActiveGroupID, FMath::RandRange(2, 3), SelectedClass, PlayerActor);
+				if (SelectedClass) {
+					SpawnEnemyInGroup(CurrentActiveGroupID, FMath::RandRange(2, 3), SelectedClass, PlayerActor);
+				}
 			}
 			SpawnCooldown = 5.0f;
 		}
@@ -244,17 +245,18 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 		SpawnCooldown -= DirectorInterval;
 		if (SpawnCooldown <= 0.0f)
 		{
-			if (HordeEnemyClasses.Num() > 0)
+			if (HordeEnemyList.Num() > 0)
 			{
-				// 한 번에 지정된 숫자(PeakSpawnCount)만큼 스폰하되, 
-				// 매번 1마리씩 다른 종류를 뽑아서 호출
+				// 한 번에 지정된 숫자(PeakSpawnCount)만큼 스폰
 				for (int32 i = 0; i < PeakSpawnCount; i++)
 				{
-					int32 RandomIndex = FMath::RandRange(0, HordeEnemyClasses.Num() - 1);
-					TSubclassOf<AActor> SelectedClass = HordeEnemyClasses[RandomIndex];
+					// 랜덤 함수 사용
+					TSubclassOf<AActor> SelectedClass = GetRandomEnemyClass(HordeEnemyList);
 
-					// 1마리씩 개별 스폰
-					SpawnEnemyInGroup(CurrentActiveGroupID, 1, SelectedClass, PlayerActor);
+					if (SelectedClass)
+					{
+						SpawnEnemyInGroup(CurrentActiveGroupID, 1, SelectedClass, PlayerActor);
+					}
 				}
 			}
 			SpawnCooldown = 3.0f;
@@ -278,6 +280,33 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 		}
 		break;
 	}
+}
+
+TSubclassOf<AActor> AUnrealProjectGameMode::GetRandomEnemyClass(const TArray<FEnemySpawnInfo>& SpawnList)
+{
+	if (SpawnList.Num() == 0) return nullptr;
+
+	// 1모든 가중치의 총합
+	float TotalWeight = 0.0f;
+	for (const FEnemySpawnInfo& Info : SpawnList)
+	{
+		TotalWeight += Info.SpawnWeight;
+	}
+
+	if (TotalWeight <= 0.0f) return nullptr;
+
+	float Random = FMath::FRandRange(0.0f, TotalWeight);
+
+	for (const FEnemySpawnInfo& Info : SpawnList)
+	{
+		Random -= Info.SpawnWeight;
+		if (Random <= 0.0f)
+		{
+			return Info.EnemyClass;
+		}
+	}
+
+	return SpawnList.Last().EnemyClass;
 }
 
 int32 AUnrealProjectGameMode::GetAliveEnemyCount() const

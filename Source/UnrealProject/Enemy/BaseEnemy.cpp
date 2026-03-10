@@ -2,13 +2,13 @@
 
 
 #include "BaseEnemy.h"
+#include "EnemyAIController.h"
 #include "../UnrealProject.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetMathLibrary.h"
-#include "AIController.h"
 #include "BrainComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "../Component/ObjectPoolComponent.h"
@@ -18,10 +18,14 @@
 ABaseEnemy::ABaseEnemy()
 {
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComp"));
 	GetCapsuleComponent()->SetCollisionProfileName(TEXT("Enemy"));
+
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABaseEnemy::OnEnemyOverlapBegin);
+	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ABaseEnemy::OnEnemyOverlapEnd);
+
 	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECR_Ignore);
 
@@ -45,9 +49,14 @@ void ABaseEnemy::BeginPlay()
 	if (GetMesh())
 	{
 		InitialMeshTransform = GetMesh()->GetRelativeTransform();
-		GetMesh()->SetCollisionProfileName(TEXT("Enemy"));
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// GetMesh()->SetCollisionProfileName(TEXT("Enemy"));
 		GetMesh()->SetSimulatePhysics(false);
 	}
+
+	// Tick 대신 0.1초마다 밀어내는 힘을 계산하는 타이머
+	FTimerHandle SeparationTimer;
+	GetWorldTimerManager().SetTimer(SeparationTimer, this, &ABaseEnemy::CalculateSeparation, 0.1f, true);
 }
 
 // Called every frame
@@ -55,6 +64,10 @@ void ABaseEnemy::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (!CurrentRepulsionForce.IsNearlyZero())
+	{
+		AddActorWorldOffset(CurrentRepulsionForce * DeltaTime, true);
+	}
 }
 
 bool ABaseEnemy::CanAttack() {
@@ -82,7 +95,7 @@ bool ABaseEnemy::IsAttacking() const
 
 void ABaseEnemy::SetCommandTarget(AActor* NewTarget)
 {
-	AAIController* AIC = Cast<AAIController>(GetController());
+	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 
 	if (AIC && AIC->GetBlackboardComponent()) {
 		AIC->GetBlackboardComponent()->SetValueAsObject(TEXT("TargetActor"), NewTarget);
@@ -144,7 +157,7 @@ void ABaseEnemy::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	}
 
 	if (CurrentState == EEnemyState::EES_Stunned) {
-		if (AAIController* AIController = Cast<AAIController>(GetController())) {
+		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController())) {
 			if (UBrainComponent* Brain = AIController->GetBrainComponent())
 			{
 				Brain->ResumeLogic("Hit Reaction");
@@ -218,7 +231,7 @@ void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
 
 		CurrentState = EEnemyState::EES_Normal;
 
-		if (AAIController* AIController = Cast<AAIController>(GetController()))
+		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
 		{
 			if (UBrainComponent* Brain = AIController->GetBrainComponent())
 			{
@@ -236,7 +249,7 @@ void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 
 	CurrentState = EEnemyState::EES_Stunned;
 
-	if (AAIController* AIController = Cast<AAIController>(GetController())) {
+	if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController())) {
 		if (UBrainComponent* Brain = AIController->GetBrainComponent())
 		{
 			Brain->PauseLogic("Hit Reaction");
@@ -257,13 +270,21 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 {
 	GetWorldTimerManager().ClearTimer(ReturnTimerHandle);
 
+	// Actor 기본 활성화
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
+	SetActorTickEnabled(true);
+
 	// 물리 끄기
 	if (GetMesh()) {
 		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector);
 		GetMesh()->SetPhysicsAngularVelocityInDegrees(FVector::ZeroVector);
 		GetMesh()->SetRelativeTransform(InitialMeshTransform);
-		GetMesh()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		GetMesh()->bPauseAnims = false;
+
+		if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance()) {
+			AnimInstance->StopAllMontages(0.0f);
+		}
 
 		if (GetCapsuleComponent()) {
 			GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -275,7 +296,7 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 	if (GetCharacterMovement())
 	{
 		GetCharacterMovement()->GravityScale = 1.0f; // 중력 복구
-		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Walking);
+		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_Falling);
 		GetCharacterMovement()->Activate(); // 컴포넌트 활성화
 		GetCharacterMovement()->Velocity = FVector::ZeroVector;
 	}
@@ -288,16 +309,16 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 	}
 
 	// AI 재가동
-	AAIController* AIC = Cast<AAIController>(GetController());
+	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 	if (AIC)
 	{
-		AIC->GetBrainComponent()->RestartLogic(); // 비헤이비어 트리 재시작
+		if (AIC->BehaviorTreeAsset) {
+			AIC->RunBehaviorTree(AIC->BehaviorTreeAsset);
+		}
+		else {
+			AIC->GetBrainComponent()->RestartLogic(); // 비헤이비어 트리 재시작
+		}
 	}
-
-	// Actor 기본 활성화
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-	SetActorTickEnabled(true);
 }
 
 void ABaseEnemy::OnPoolReturned_Implementation()
@@ -305,23 +326,18 @@ void ABaseEnemy::OnPoolReturned_Implementation()
 	// 걸려있는 모든 타이머 취소 (공격 쿨타임, 사망 타이머 등)
 	GetWorldTimerManager().ClearAllTimersForObject(this);
 
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
-	SetActorTickEnabled(false);
-
 	// 물리 끄기
-	if (GetMesh())
+	/*if (GetMesh())
 	{
 		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		GetMesh()->SetPhysicsLinearVelocity(FVector::ZeroVector); // 관성 제거
-	}
+	}*/
 
 	if (GetCapsuleComponent()) {
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 
 	// AI 정지 시키기
-	AAIController* AIC = Cast<AAIController>(GetController());
+	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 	if (AIC)
 	{
 		// BrainComponent(비헤이비어 트리)가 있다면 스톱
@@ -337,6 +353,10 @@ void ABaseEnemy::OnPoolReturned_Implementation()
 		GetCharacterMovement()->GravityScale = 0.0f; // 중력 끄기 (둥둥 뜨게)
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None); // 이동 모드 없음
 	}
+
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	SetActorTickEnabled(false);
 }
 
 void ABaseEnemy::SetOwningPool_Implementation(UObjectPoolComponent* NewPool)
@@ -420,4 +440,45 @@ void ABaseEnemy::FreezeAnimation()
 	{
 		GetMesh()->bPauseAnims = true;
 	}
+}
+
+void ABaseEnemy::OnEnemyOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	ABaseEnemy* OverlappedEnemy = Cast<ABaseEnemy>(OtherActor);
+	if (OverlappedEnemy && OverlappedEnemy != this)
+	{
+		CachedNeighbors.AddUnique(OverlappedEnemy); // 명단에 추가
+	}
+}
+
+void ABaseEnemy::OnEnemyOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	ABaseEnemy* OverlappedEnemy = Cast<ABaseEnemy>(OtherActor);
+	if (OverlappedEnemy)
+	{
+		CachedNeighbors.Remove(OverlappedEnemy); // 명단에서 삭제
+	}
+}
+
+void ABaseEnemy::CalculateSeparation()
+{
+	CurrentRepulsionForce = FVector::ZeroVector;
+
+	if (CachedNeighbors.Num() == 0) return;
+
+	for (ABaseEnemy* Neighbor : CachedNeighbors) {
+		// 죽은 적은 계산 X
+		if (Neighbor && Neighbor->CurrentState != EEnemyState::EES_Dead) {
+			FVector PushDirection = GetActorLocation() - Neighbor->GetActorLocation();
+			PushDirection.Z = 0.0f;
+
+			float Distance = PushDirection.Size();
+			if (Distance > 1.0f) {
+				CurrentRepulsionForce += (PushDirection.GetSafeNormal() * (150.0f / Distance));
+			}
+		}
+	}
+
+	// 여러 마리의 힘이 동시에 들어오는걸 방지
+	CurrentRepulsionForce = CurrentRepulsionForce.GetClampedToMaxSize(300.0f);
 }

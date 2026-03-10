@@ -7,21 +7,8 @@
 #include "../Component/AttributeComponent.h"
 #include "../Interface/HitInterface.h"
 #include "../Interface/PoolableInterface.h"
+#include "../EnumTypes/CharacterTypes.h"
 #include "BaseEnemy.generated.h"
-
-UENUM(BlueprintType)
-enum class EEnemyState : uint8 {
-	EES_Normal		UMETA(DisplayName = "Normal"),			// 평상시
-	EES_Attacking	UMETA(DisplayName = "Attacking"),		// 공격 중
-	EES_Stunned		UMETA(DisplayName = "Stunned"),			// 기절 
-	EES_Dead		UMETA(DisplayName = "Dead")				// 사망
-};
-
-UENUM(BlueprintType)
-enum class EEnemyType : uint8 {
-	Melee		    UMETA(DisplayName = "Melee"),
-	Ranged			UMETA(DisplayName = "Ranged")
-};
 
 UCLASS()
 class UNREALPROJECT_API ABaseEnemy : public ACharacter, public IHitInterface, public IPoolableInterface
@@ -133,4 +120,21 @@ public:
 	// 타이머핸들 (SetLifeSpan 대신 사용)
 	FTimerHandle ReturnTimerHandle;
 
+protected:
+	// 주변에 겹쳐있는 다른 적들
+	UPROPERTY()
+	TArray<ABaseEnemy*> CachedNeighbors;
+
+	// 계산된 밀어내기 힘을 저장할 변수
+	FVector CurrentRepulsionForce;
+
+	// 충돌 이벤트 바인딩용 함수
+	UFUNCTION()
+	void OnEnemyOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+	void OnEnemyOverlapEnd(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	// 가끔씩 실행할 계산 함수
+	void CalculateSeparation();
 };

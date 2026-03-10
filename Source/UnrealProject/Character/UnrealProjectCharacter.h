@@ -7,6 +7,7 @@
 #include "Logging/LogMacros.h"
 #include "Blueprint/UserWidget.h"
 #include "../Interface/HitInterface.h"
+#include "../EnumTypes/CharacterTypes.h"
 #include "UnrealProjectCharacter.generated.h"
 
 class UInputComponent;
@@ -22,13 +23,6 @@ struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeathPlayer, AActor*, Victim, AActor*, Killer);
-
-UENUM(BlueprintType)
-enum class EPlayerState : uint8 {
-	EPS_Normal UMETA(DisplayName = "Normal"), // 정상
-	EPS_Downed UMETA(DisplayName = "Downed"), // 기절
-	EPS_Dead UMETA(DisplayName = "Dead"), // 사망
-};
 
 UCLASS(config=Game)
 class AUnrealProjectCharacter : public ACharacter, public IHitInterface

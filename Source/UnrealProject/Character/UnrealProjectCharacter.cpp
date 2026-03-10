@@ -246,6 +246,11 @@ void AUnrealProjectCharacter::Downed(AActor* VictimActor, AActor* KillerActor)
 	UE_LOG(LogTemp, Warning, TEXT("Player Downed"));
 	SetPlayerState(EPlayerState::EPS_Downed);
 
+	if (CombatComponent) {
+		CombatComponent->StopAttack();
+		CombatComponent->EquipWeaponBySlot(EWeaponSlot::Secondary);
+	}
+
 	// 드론 부활 시도
 	if (DroneComponent) {
 		if (!DroneComponent->TryActivateRevive()) {

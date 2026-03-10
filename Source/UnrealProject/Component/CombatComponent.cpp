@@ -23,6 +23,8 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	CarriedAmmoFill();
+
 	// 테스트용 기본 무기 생성
 	/*if (DefaultWeaponClass) {
 		FActorSpawnParameters SpawnParams;
@@ -105,6 +107,22 @@ void UCombatComponent::DropWeaponSafeLocation(ABaseWeapon* WeaponToDrop)
 }
 
 
+void UCombatComponent::CarriedAmmoFill()
+{
+	CarriedAmmo.Emplace(EAmmoType::EAT_AssaultRifle, MaxARAmmo);
+	CarriedAmmo.Emplace(EAmmoType::EAT_Launcher, MaxLCAmmo);
+	CarriedAmmo.Emplace(EAmmoType::EAT_Shotgun, MaxSGAmmo);
+	CarriedAmmo.Emplace(EAmmoType::EAT_Sniper, MaxSRAmmo);
+
+	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon))
+	{
+		EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+		int32 AvailableAmmo = CarriedAmmo.Contains(AmmoType) ? CarriedAmmo[AmmoType] : -1;
+
+		OnReserveAmmoChanged.Broadcast(AvailableAmmo);
+	}
+}
+
 // Called every frame
 void UCombatComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
@@ -131,6 +149,8 @@ void UCombatComponent::PickupWeapon(ABaseWeapon* NewWeapon)
 			OldGrenade->SetCurrentAmmoInClip(OldGrenade->GetMaxAmmoInClip());
 
 			NewWeapon->Destroy();
+
+			EquipWeaponBySlot(Slot);
 			return;
 		}
 	}
@@ -174,11 +194,16 @@ void UCombatComponent::EquipWeaponBySlot(EWeaponSlot SlotToEquip)
 	if (!CarriedWeapons.Contains(SlotToEquip)) return;
 
 	ABaseWeapon* WeaponToEquip = CarriedWeapons[SlotToEquip];
-
-	if (Cast<ARangedWeapon>(WeaponToEquip)->GetMaxAmmoInClip() <= 0) return;
 	
 	// 현재 들고 있는 무기는 집어넣기
-	if (CurrentWeapon) CurrentWeapon->SetActorHiddenInGame(true);
+	if (CurrentWeapon) {
+		CurrentWeapon->SetActorHiddenInGame(true);
+
+		if (ARangedWeapon* OldRangedWeapon = Cast<ARangedWeapon>(CurrentWeapon)) {
+			OldRangedWeapon->CancelReload();
+			OldRangedWeapon->OnWeaponReloadFinished.RemoveDynamic(this, &UCombatComponent::HandleWeaponReloadFinished);
+		}
+	}
 
 	AUnrealProjectCharacter* Owner = Cast<AUnrealProjectCharacter>(GetOwner());
 	if (APlayerController* PC = Cast<APlayerController>(Owner->GetController()))
@@ -203,8 +228,21 @@ void UCombatComponent::EquipWeaponBySlot(EWeaponSlot SlotToEquip)
 	CurrentWeapon = WeaponToEquip;
 	CurrentWeapon->SetActorHiddenInGame(false);
 
-	if (OnCurrentWeaponChanged.IsBound()) {
-		OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
+	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon))
+	{
+		EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+		int32 AvailableAmmo = CarriedAmmo.Contains(AmmoType) ? CarriedAmmo[AmmoType] : -1;
+
+		if (OnReserveAmmoChanged.IsBound()) {
+			OnReserveAmmoChanged.Broadcast(AvailableAmmo);
+		}
+
+		if (OnCurrentWeaponChanged.IsBound()) {
+			OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
+		}
+
+		RangedWeapon->OnWeaponReloadFinished.RemoveDynamic(this, &UCombatComponent::HandleWeaponReloadFinished);
+		RangedWeapon->OnWeaponReloadFinished.AddDynamic(this, &UCombatComponent::HandleWeaponReloadFinished);
 	}
 
 	AttachWeaponToHand(CurrentWeapon);
@@ -245,7 +283,19 @@ void UCombatComponent::StopAttack()
 void UCombatComponent::Reload() {
 	if (CurrentWeapon == nullptr) return;
 
-	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon)) RangedWeapon->Reload();
+	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon)) {
+		EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+
+		int32 AvailableAmmo = 0;
+		if (CarriedAmmo.Contains(AmmoType))
+		{
+			AvailableAmmo = CarriedAmmo[AmmoType];
+		}
+
+		if (AvailableAmmo > 0) {
+			RangedWeapon->Reload(AvailableAmmo);
+		}
+	}
 	else UE_LOG(LogTemp, Warning, TEXT("This weapon cant Reload"));
 }
 
@@ -280,5 +330,32 @@ void UCombatComponent::CycleWeapon(bool bScrollDown)
 			EquipWeaponBySlot(SlotToCheck);
 			break;
 		}
+	}
+}
+
+void UCombatComponent::HandleWeaponReloadFinished(int32 AmmoConsumed)
+{
+	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon);
+	if (!RangedWeapon) return;
+
+	EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+
+	if (AmmoConsumed > 0)
+	{
+		CarriedAmmo[AmmoType] -= AmmoConsumed;
+
+		OnReserveAmmoChanged.Broadcast(CarriedAmmo[AmmoType]);
+	}
+}
+
+void UCombatComponent::DiscardEmptyWeapon()
+{
+	if (CurrentWeapon) {
+		CarriedWeapons.Remove(CurrentWeapon->WeaponType);
+
+		CurrentWeapon->Destroy();
+		CurrentWeapon = nullptr;
+
+		EquipWeaponBySlot(EWeaponSlot::Primary);
 	}
 }
