@@ -101,4 +101,9 @@ public:
 	// 플레이어가 현재 들고 있는 여분 탄약들
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat|Ammo")
 	TMap<EAmmoType, int32> CarriedAmmo;
+
+public:
+	// GameInstance의 포인터를 받아서 알아서 자기 데이터를 넣고 빼는 함수
+	void SaveDataToGI(class USurvivalGameInstance* GI);
+	void LoadDataFromGI(USurvivalGameInstance* GI);
 };

@@ -143,6 +143,15 @@ protected:
 	// End of APawn interface
 
 public:
+	// 레벨 이동 직전에 부를 통합 저장 함수
+	UFUNCTION(BlueprintCallable, Category = "SaveLoad")
+	void SaveAllPlayerState();
+
+	// 새 레벨 시작 시 부를 통합 복구 함수
+	UFUNCTION(BlueprintCallable, Category = "SaveLoad")
+	void LoadAllPlayerState();
+
+public:
 	/** Returns Mesh1P subobject **/
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/

@@ -6,6 +6,7 @@
 #include "../Weapon/RangedWeapon.h"
 #include "GameFramework/Character.h"
 #include "EnhancedInputSubsystems.h"
+#include "../SurvivalGameInstance.h"
 
 // Sets default values for this component's properties
 UCombatComponent::UCombatComponent()
@@ -356,6 +357,95 @@ void UCombatComponent::DiscardEmptyWeapon()
 		CurrentWeapon->Destroy();
 		CurrentWeapon = nullptr;
 
+		EquipWeaponBySlot(EWeaponSlot::Primary);
+	}
+}
+
+void UCombatComponent::SaveDataToGI(USurvivalGameInstance* GI)
+{
+	if (!GI) return;
+
+	GI->PlayerCombatData.DefaultWeaponClass = DefaultWeaponClass;
+	GI->PlayerCombatData.CarriedAmmo = CarriedAmmo;
+
+	GI->PlayerCombatData.SavedCarriedWeapons.Empty();
+
+	// 현재 TMap을 하나하나 순찰
+	for (const auto& Pair : CarriedWeapons) {
+		EWeaponSlot Slot = Pair.Key;
+		ABaseWeapon* Weapon = Pair.Value;
+
+		if (Weapon) {
+			FSavedWeaponInfo WeaponInfo;
+			WeaponInfo.WeaponClass = Weapon->GetClass();
+
+			// 원거리이면 총알 수도 탄창 총알 수를 가져옴
+			if (ARangedWeapon* Ranged = Cast<ARangedWeapon>(Weapon)) {
+				WeaponInfo.MagazineAmmo = Ranged->GetCurrentAmmoInClip();
+				WeaponInfo.MaxAmmo = Ranged->GetMaxAmmoInClip();
+			}
+			else
+			{
+				// 캐스팅에 실패했다면 근접 무기(Melee) 등이므로 총알은 0으로 둡니다.
+				WeaponInfo.MagazineAmmo = 0;
+				WeaponInfo.MaxAmmo = 0;
+			}
+			GI->PlayerCombatData.SavedCarriedWeapons.Add(Slot, WeaponInfo);
+
+			if (Weapon == CurrentWeapon) {
+				GI->PlayerCombatData.CurrentEquippedSlot = Slot;
+			}
+		}
+	}
+}
+
+void UCombatComponent::LoadDataFromGI(USurvivalGameInstance* GI)
+{
+	if (!GI) return;
+
+	DefaultWeaponClass = GI->PlayerCombatData.DefaultWeaponClass;
+	CarriedAmmo = GI->PlayerCombatData.CarriedAmmo;
+
+	CarriedWeapons.Empty();
+	CurrentWeapon = nullptr;
+
+	// SavedCarriedWeapons의 무기들을 현재 무기들로 옮겨옴
+	for (auto& Pair : GI->PlayerCombatData.SavedCarriedWeapons) {
+		EWeaponSlot Slot = Pair.Key;
+		TSubclassOf<ABaseWeapon> WeaponClass = Pair.Value.WeaponClass;
+		float MagazineAmmo = Pair.Value.MagazineAmmo;
+		float MaxAmmo = Pair.Value.MaxAmmo;
+
+		if (WeaponClass) {
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			ABaseWeapon* SpawnedWeapon = GetWorld()->SpawnActor<ABaseWeapon>(WeaponClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+			if (SpawnedWeapon) {
+				if (ARangedWeapon* Ranged = Cast<ARangedWeapon>(SpawnedWeapon)) {
+					Ranged->SetCurrentAmmoInClip(MagazineAmmo);
+					Ranged->SetMaxAmmoInClip(MaxAmmo);
+				}
+
+				SpawnedWeapon->SetOwner(GetOwner());
+				SpawnedWeapon->SetActorHiddenInGame(true);
+				SpawnedWeapon->SetInstigator(Cast<APawn>(GetOwner()));
+
+				SpawnedWeapon->SetWeaponState(EWeaponState::Equipped);
+
+				CarriedWeapons.Add(Slot, SpawnedWeapon);
+			}
+		}
+	}
+
+	// 이전 레벨에서 들고 있던 무기를 그대로 꺼내기
+	if (GI->PlayerCombatData.CurrentEquippedSlot != EWeaponSlot::MAX)
+	{
+		EquipWeaponBySlot(GI->PlayerCombatData.CurrentEquippedSlot);
+	}
+	else
+	{
 		EquipWeaponBySlot(EWeaponSlot::Primary);
 	}
 }

@@ -118,4 +118,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Drone|Event")
 	FOnDroneReviveComplete OnReviveComplete;
+
+public:
+	// GameInstance의 포인터를 받아서 알아서 자기 데이터를 넣고 빼는 함수
+	void SaveDataToGI(class USurvivalGameInstance* GI);
+	void LoadDataFromGI(USurvivalGameInstance* GI);
 };

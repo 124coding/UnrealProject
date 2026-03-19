@@ -3,6 +3,7 @@
 
 #include "AttributeComponent.h"
 #include "GameFramework/Actor.h"
+#include "../SurvivalGameInstance.h"
 
 // Sets default values for this component's properties
 UAttributeComponent::UAttributeComponent()
@@ -95,5 +96,20 @@ void UAttributeComponent::Heal(float Amount)
 	if (OnHealthChanged.IsBound()) {
 		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 	}
+}
+
+void UAttributeComponent::SaveDataToGI(USurvivalGameInstance* GI)
+{
+	if (!GI) return;
+
+	GI->PlayerAttributeData.MaxHealth = MaxHealth;
+	GI->PlayerAttributeData.CurrentHealth = CurrentHealth;
+}
+
+void UAttributeComponent::LoadDataFromGI(USurvivalGameInstance* GI)
+{
+	if (!GI) return;
+	MaxHealth = GI->PlayerAttributeData.MaxHealth;
+	CurrentHealth = GI->PlayerAttributeData.CurrentHealth;
 }
 

@@ -73,8 +73,8 @@ protected:
 	TArray<FEnemySpawnInfo> HordeEnemyList;  // 피크 때 쏟아질 특수/물량 적들
 
 	// 디렉터 밸런스 설정
-	UPROPERTY(EditDefaultsOnly, Category = "Director|Balance")
-	float MaxRelaxTime = 30.0f; // 휴식기 최대 시간
+	//UPROPERTY(EditDefaultsOnly, Category = "Director|Balance")
+	//float MaxRelaxTime = 30.0f; // 휴식기 최대 시간
 
 	UPROPERTY(EditDefaultsOnly, Category = "Director|Balance")
 	float PeakDuration = 15.0f; // 웨이브 지속 시간

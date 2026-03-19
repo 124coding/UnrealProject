@@ -9,6 +9,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Components/PrimitiveComponent.h"
 #include "Engine/OverlapResult.h"
+#include "../SurvivalGameInstance.h"
 
 // Sets default values for this component's properties
 UDroneComponent::UDroneComponent()
@@ -281,4 +282,20 @@ void UDroneComponent::ApplyUpgrade(EDroneUpgradeType Type, float Value)
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("[Upgrade] Type: %d, Value applied: %f"), (int32)Type, Value);
+}
+
+void UDroneComponent::SaveDataToGI(USurvivalGameInstance* GI)
+{
+	if (!GI) return;
+
+	GI->SavedDroneStats = CurrentStats;
+	GI->SavedDroneActiveSkill = CurrentActiveSkill;
+}
+
+void UDroneComponent::LoadDataFromGI(USurvivalGameInstance* GI)
+{
+	if (!GI) return;
+
+	CurrentStats = GI->SavedDroneStats;
+	CurrentActiveSkill = GI->SavedDroneActiveSkill;
 }

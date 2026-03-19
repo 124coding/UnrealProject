@@ -23,9 +23,11 @@ public:
 	float StressDecayRate = 5.0f;
 
 	// 외부에서 이벤트를 통해 스트레스를 증가시키는 함수
+	UFUNCTION(BlueprintCallable)
 	void AddStressEvent(float StressAmount);
 
 	// 매 프레임(또는 타이머)마다 스트레스를 서서히 감소시키는 함수 (휴식기용)
+	UFUNCTION(BlueprintCallable)
 	void DecayStress(float DeltaTime);
 
 	// 현재 스트레스 레벨 반환

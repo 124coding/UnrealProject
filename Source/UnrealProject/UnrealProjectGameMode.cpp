@@ -207,7 +207,12 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 		// Stress 감소
 		DataSubsystem->DecayStress(DirectorInterval);
 
-		if (TimeInCurrentPhase > MaxRelaxTime)
+		/*if (TimeInCurrentPhase > MaxRelaxTime)
+		{
+			ChangePhase(EDirectorPhase::BuildUp);
+		}*/
+
+		if (CurrentStress >= 0.2f)
 		{
 			ChangePhase(EDirectorPhase::BuildUp);
 		}
@@ -227,14 +232,14 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 
 				// 뽑힌 랜덤 클래스로 스폰
 				if (SelectedClass) {
-					SpawnEnemyInGroup(CurrentActiveGroupID, FMath::RandRange(2, 3), SelectedClass, PlayerActor);
+					SpawnEnemyInGroup(CurrentActiveGroupID, FMath::RandRange(2, 3), SelectedClass/*, PlayerActor*/);
 				}
 			}
 			SpawnCooldown = 5.0f;
 		}
 
 		// 플레이어의 스트레스가 80%를 넘거나, 빌드업 시간이 40초를 넘으면 Peak
-		if (CurrentStress >= 0.8f || TimeInCurrentPhase > 40.0f)
+		if (CurrentStress >= 0.8f /*|| TimeInCurrentPhase > 40.0f*/)
 		{
 			ChangePhase(EDirectorPhase::Peak);
 		}

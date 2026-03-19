@@ -21,6 +21,7 @@
 
 #include "DrawDebugHelpers.h"
 #include "../Interface/Interactable.h"
+#include "../SurvivalGameInstance.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -94,6 +95,8 @@ void AUnrealProjectCharacter::BeginPlay()
 		GetMesh()->SetCollisionProfileName(TEXT("Player"));
 
 	}
+
+	LoadAllPlayerState();
 
 	/*if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Death);
@@ -199,6 +202,30 @@ void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
 	}
+}
+
+void AUnrealProjectCharacter::SaveAllPlayerState()
+{
+	USurvivalGameInstance* GI = Cast<USurvivalGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	if (AttributeComponent) AttributeComponent->SaveDataToGI(GI);
+	if (CombatComponent) CombatComponent->SaveDataToGI(GI);
+	if (DroneComponent) DroneComponent->SaveDataToGI(GI);
+
+	UE_LOG(LogTemp, Warning, TEXT("Component Data Move to GameInstance"));
+}
+
+void AUnrealProjectCharacter::LoadAllPlayerState()
+{
+	USurvivalGameInstance* GI = Cast<USurvivalGameInstance>(GetGameInstance());
+	if (!GI) return;
+
+	if (AttributeComponent) AttributeComponent->LoadDataFromGI(GI);
+	if (CombatComponent) CombatComponent->LoadDataFromGI(GI);
+	if (DroneComponent) DroneComponent->LoadDataFromGI(GI);
+
+	UE_LOG(LogTemp, Warning, TEXT("Component Data Move from GameInstance"));
 }
 
 bool AUnrealProjectCharacter::IsWeaponEquipped() const
