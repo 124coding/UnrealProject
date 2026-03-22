@@ -101,4 +101,11 @@ protected:
 
 	// 점사 시 현재 발사 카운트
 	int32 CurrentBurstCount = 0;
+
+	// 무기별 넉백 강도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float KnockbackPower = 500.0f;
+
+public:
+	float GetKnockbackPower() const { return KnockbackPower; }
 };

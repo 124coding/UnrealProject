@@ -116,6 +116,5 @@ void AHitScanWeapon::ExecuteFire()
 				Beam->SetVectorParameter(BeamTargetParamName, BeamEndPoint);
 			}
 		}
-
 	}
 }

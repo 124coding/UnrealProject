@@ -50,11 +50,15 @@ protected:
 	UFUNCTION()
 	virtual void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 
+	virtual void Landed(const FHitResult& Hit) override;
+
 	// 방향 판별 함수 선언
 	void PlayDirectionalHitReact(const FVector& ImpactPoint);
 
 public:
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
 	virtual void OnPoolSpawned_Implementation() override;
 	virtual void OnPoolReturned_Implementation() override;

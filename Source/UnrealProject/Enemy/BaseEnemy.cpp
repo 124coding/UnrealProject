@@ -13,6 +13,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "../Component/ObjectPoolComponent.h"
 #include "../UnrealProjectGameMode.h"
+#include "../Weapon/BaseWeapon.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -98,7 +99,11 @@ void ABaseEnemy::SetCommandTarget(AActor* NewTarget)
 	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 
 	if (AIC && AIC->GetBlackboardComponent()) {
-		AIC->GetBlackboardComponent()->SetValueAsObject(TEXT("TargetActor"), NewTarget);
+		static const FName TargetActorKey = TEXT("TargetActor");
+
+		if (AIC->GetBlackboardComponent()->GetValueAsObject(TargetActorKey) != NewTarget) {
+			AIC->GetBlackboardComponent()->SetValueAsObject(TargetActorKey, NewTarget);
+		}
 	}
 }
 
@@ -157,6 +162,12 @@ void ABaseEnemy::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 	}
 
 	if (CurrentState == EEnemyState::EES_Stunned) {
+		if (GetCharacterMovement()->IsFalling())
+		{
+			// AI Resume도 하지 않고, Normal로도 바꾸지 않습니다. (Landed 함수가 나중에 처리할 겁니다)
+			return;
+		}
+
 		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController())) {
 			if (UBrainComponent* Brain = AIController->GetBrainComponent())
 			{
@@ -170,6 +181,31 @@ void ABaseEnemy::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 
 	UE_LOG(LogTemp, Warning, TEXT("EES_Normal"));
 	CurrentState = EEnemyState::EES_Normal;
+}
+
+void ABaseEnemy::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	// 바닥에 떨어졌는데 아직 스턴 상태라면
+	if (CurrentState == EEnemyState::EES_Stunned)
+	{
+		// 혹시라도 피격 애니메이션이 아주 길어서 아직 재생 중인지 체크
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && !AnimInstance->IsAnyMontagePlaying())
+		{
+			// 몽타주도 끝났고, 땅에도 닿았으니 완벽하게 복구!
+			if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController())) {
+				if (UBrainComponent* Brain = AIController->GetBrainComponent())
+				{
+					Brain->ResumeLogic("Hit Reaction");
+				}
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("Landed & EES_Normal"));
+			CurrentState = EEnemyState::EES_Normal;
+		}
+	}
 }
 
 void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
@@ -226,18 +262,22 @@ void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
 
 	if (Duration <= 0.0f)
 	{
-		// 바로 풀어주지 않으면 AI가 영원히 멈춤
-		UE_LOG(LogTemp, Error, TEXT("Montage Play Error"));
-
-		CurrentState = EEnemyState::EES_Normal;
-
-		if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
-		{
-			if (UBrainComponent* Brain = AIController->GetBrainComponent())
+		// 임시로 0.5초 동안 몸이 굳은(Stun) 상태를 유지하다가 땅에 떨어지면 풀리도록 세팅
+		FTimerHandle FakeHitReactTimer;
+		GetWorldTimerManager().SetTimer(FakeHitReactTimer, FTimerDelegate::CreateLambda([this]()
 			{
-				Brain->ResumeLogic("Hit Reaction"); // 즉시 재가동
-			}
-		}
+				if (!GetCharacterMovement()->IsFalling())
+				{
+					CurrentState = EEnemyState::EES_Normal;
+					if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController()))
+					{
+						if (UBrainComponent* Brain = AIController->GetBrainComponent())
+						{
+							Brain->ResumeLogic("Hit Reaction");
+						}
+					}
+				}
+			}), 0.5f, false);
 	}
 }
 
@@ -264,6 +304,41 @@ void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 		AnimInstance->OnMontageEnded.RemoveDynamic(this, &ABaseEnemy::OnMontageEnded);
 		AnimInstance->OnMontageEnded.AddDynamic(this, &ABaseEnemy::OnMontageEnded);
 	}*/
+}
+
+float ABaseEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+
+	GetCharacterMovement()->StopMovementImmediately();
+
+	// 타겟 지정
+	if (EventInstigator && EventInstigator->GetPawn())
+	{
+		SetCommandTarget(EventInstigator->GetPawn());
+	}
+	else if (DamageCauser)
+	{
+		// 혹시라도 Instigator가 없는 환경 데미지 등일 경우를 대비
+		SetCommandTarget(DamageCauser);
+	}
+
+	// 넉백 적용
+	if (ABaseWeapon* Weapon = Cast<ABaseWeapon>(DamageCauser)) {
+		float Force = Weapon->GetKnockbackPower();
+	
+		FVector PushDirection = (this->GetActorLocation() - Weapon->GetOwner()->GetActorLocation()).GetSafeNormal();
+
+		// 바닥 마찰 무시용 살짝 띄우기
+		PushDirection.Z = 0.5f;
+		PushDirection.Normalize();
+
+		FVector FinalKnockback = PushDirection * Force;
+
+		this->LaunchCharacter(FinalKnockback, true, true);
+	}
+
+	return ActualDamage;
 }
 
 void ABaseEnemy::OnPoolSpawned_Implementation()
