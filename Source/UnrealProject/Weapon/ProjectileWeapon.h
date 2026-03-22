@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "RangedWeapon.h"
+#include "DataTable/ProjectileWeaponStatRow.h"
 #include "ProjectileWeapon.generated.h"
 
 /**
@@ -21,9 +22,14 @@ public:
 	virtual void ExecuteFire() override;
 
 protected:
+	virtual void InitWeaponData() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Projectile|Stat")
+	FProjectileWeaponStatRow CurrentProjectileStat;
+
 	// 투사체 클래스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponStat")
-	TSubclassOf<class AUnrealProjectProjectile> ProjectileClass;
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "WeaponStat")
+	TSubclassOf<class AUnrealProjectProjectile> ProjectileClass;*/
 
 	UPROPERTY()
 	class UObjectPoolComponent* ProjectilePool;

@@ -9,9 +9,25 @@
 
 void AGrenadeWeapon::BeginPlay()
 {
-	MaxAmmoPerClip = 1;
+	CurrentRangedStat.MaxAmmoPerClip = 1;
 
 	Super::BeginPlay();
+}
+
+void AGrenadeWeapon::InitWeaponData()
+{
+	if (!WeaponDataHandle.IsNull())
+	{
+		FGrenadeWeaponStatRow* RowData = WeaponDataHandle.GetRow<FGrenadeWeaponStatRow>(TEXT("GrenadeWeaponDataLookup"));
+
+		if (RowData)
+		{
+			CurrentGrenadeStat = *RowData;
+			CurrentProjectileStat = *RowData;
+			CurrentRangedStat = *RowData;
+			CurrentWeaponStat = *RowData;
+		}
+	}
 }
 
 FVector AGrenadeWeapon::CalculateLaunchDirection(FVector MuzzleLocation, FVector HitTarget) {
@@ -19,10 +35,10 @@ FVector AGrenadeWeapon::CalculateLaunchDirection(FVector MuzzleLocation, FVector
 	FVector BaseDirection = Super::CalculateLaunchDirection(MuzzleLocation, HitTarget);
 
 	// 수류탄 전용 각도(Pitch)를 더해줍니다.
-	if (LaunchPitchOffset > 0.0f)
+	if (CurrentGrenadeStat.LaunchPitchOffset > 0.0f)
 	{
 		FRotator LaunchRot = BaseDirection.Rotation();
-		LaunchRot.Pitch += LaunchPitchOffset;
+		LaunchRot.Pitch += CurrentGrenadeStat.LaunchPitchOffset;
 
 		return LaunchRot.Vector();
 	}
@@ -55,19 +71,19 @@ void AGrenadeWeapon::StopAttack()
 	float HeldTime = GetWorld()->GetTimeSeconds() - ChargeStartTime;
 
 	// 차지 비율 계산 (0.0 ~ 1.0 사이로 고정)
-	float ChargeRatio = FMath::Clamp(HeldTime / MaxChargeTime, 0.0f, 1.0f);
+	float ChargeRatio = FMath::Clamp(HeldTime / CurrentGrenadeStat.MaxChargeTime, 0.0f, 1.0f);
 
 	// 비율에 따라 최종 발사 속도 보간
-	CalculatedChargeSpeed = FMath::Lerp(MinLaunchSpeed, MaxLaunchSpeed, ChargeRatio);
+	CalculatedChargeSpeed = FMath::Lerp(CurrentGrenadeStat.MinLaunchSpeed, CurrentGrenadeStat.MaxLaunchSpeed, ChargeRatio);
 
 	/* 던지는 애니메이션 실행 */
 
 	Super::ExecuteFire();
 
-	MaxAmmoPerClip--;
-	CurrentAmmoInClip = MaxAmmoPerClip;
+	CurrentRangedStat.MaxAmmoPerClip--;
+	CurrentAmmoInClip = CurrentRangedStat.MaxAmmoPerClip;
 
-	if (MaxAmmoPerClip <= 0) {
+	if (CurrentRangedStat.MaxAmmoPerClip <= 0) {
 		if (AUnrealProjectCharacter* Player = Cast<AUnrealProjectCharacter>(GetOwner())) {
 			if (UCombatComponent* PlayerCombat = Player->FindComponentByClass<UCombatComponent>()) {
 				PlayerCombat->DiscardEmptyWeapon();

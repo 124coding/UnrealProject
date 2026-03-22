@@ -8,55 +8,68 @@
 
 #include "Components/SphereComponent.h"
 
+#include "Engine/DataTable.h"
+
 #include "DroneComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDroneReviveComplete, float, RevivePercent);
 
 // 드론의 모든 스탯과 기능 잠금 여부를 관리하는 구조체 <-- 추후 능력 확장을 위함
 USTRUCT(BlueprintType) 
-struct FDroneStats{
+struct FDroneStats : public FTableRowBase{
 	GENERATED_BODY()
 
 public:
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float ActiveSkillCooldownTime = 60.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float KnockbackRange = 500.0f; // 넉백 범위
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float KnockbackForce = 1000.0f; // 넉백 파워
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	bool bHasAutoAttack = false; // 자동 공격 가능 여부
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	bool bHasAutoHeal = false; // 힐 가능 여부
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float AttackRange = 1000.0f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float AttackDamage = 10.0f; // 데미지
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float HealAmount = 5.0f; // 힐량
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float AttackSpeed = 0.5f; // 공격속도
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float HealInterval = 5.0f; // 힐 주기
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float ReviveDuration = 10.0f; // 부활 걸리는 시간
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float ReviveCooldown = 300.0f; // 부활 스킬 쿨타임
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "25", UIMin = "100", ForceUnits = "%"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta = (ClampMin = "25", UIMin = "100", ForceUnits = "%"))
 	float ReviveHealthPercent = 25.0f; // 부활 시 채워줄 체력 퍼센트
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Drone|Skill")
+	EDroneActiveSkill CurrentActiveSkill;
+
+	// 에디터에서 드론의 외형을 갈아 끼울 수 있는 슬롯
+	UPROPERTY(EditDefaultsOnly, Category = "Drone | Visual")
+	class UStaticMesh* DroneMeshAsset;
+
+	// 머즐 플래시(총구 화염) 이펙트 에셋을 받을 변수
+	UPROPERTY(EditDefaultsOnly, Category = "Drone | VFX")
+	class UNiagaraSystem* MuzzleFlashVFX;
 	/* 다양하게 확장 가능 */
 };
 
@@ -79,7 +92,10 @@ public:
 
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drone")
+	UPROPERTY(EditDefaultsOnly, Category = "Drone | Data")
+	FDataTableRowHandle DroneDataHandle;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Drone")
 	FDroneStats CurrentStats;
 	
 	EDroneState CurrentDroneState = EDroneState::Idle; // 현재 상태
@@ -127,17 +143,9 @@ protected:
 	UFUNCTION()
 	void OnRadarEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
-	// 에디터에서 드론의 외형을 갈아 끼울 수 있는 슬롯
-	UPROPERTY(EditAnywhere, Category = "Drone | Visual")
-	class UStaticMesh* DroneMeshAsset;
-
 	// 드론의 외형
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Drone | Visual")
 	UStaticMeshComponent* DroneMesh;
-
-	// 머즐 플래시(총구 화염) 이펙트 에셋을 받을 변수
-	UPROPERTY(EditAnywhere, Category = "Drone | VFX")
-	class UNiagaraSystem* MuzzleFlashVFX;
 
 protected:
 	// 플레이어를 쫓아가는 속도 (낮을수록 더 늦게/무겁게 따라옴)
@@ -172,8 +180,6 @@ public:
 	void ApplyUpgrade(EDroneUpgradeType Type, float Value);
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Drone|Skill")
-	EDroneActiveSkill CurrentActiveSkill;
 
 	UPROPERTY(BlueprintAssignable, Category = "Drone|Event")
 	FOnDroneReviveComplete OnReviveComplete;

@@ -19,7 +19,7 @@ void ARangedWeapon::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CurrentAmmoInClip = MaxAmmoPerClip;
+	CurrentAmmoInClip = CurrentRangedStat.MaxAmmoPerClip;
 }
 
 void ARangedWeapon::Tick(float DeltaTime)
@@ -37,7 +37,7 @@ void ARangedWeapon::Tick(float DeltaTime)
 					CurrentRecoilPitch,
 					TargetRecoilPitch,
 					DeltaTime,
-					RecoilInterpSpeed
+					CurrentRangedStat.RecoilInterpSpeed
 				);
 
 				// 이번 프레임에 움직여야 할 양
@@ -61,9 +61,9 @@ void ARangedWeapon::ExecuteFire()
 
 	ConsumeAmmo();
 
-	if (MuzzleFlashFX) {
+	if (CurrentRangedStat.MuzzleFlashFX) {
 		UNiagaraFunctionLibrary::SpawnSystemAttached(
-			MuzzleFlashFX,
+			CurrentRangedStat.MuzzleFlashFX,
 			WeaponMesh,
 			MuzzleSocketName,
 			FVector::ZeroVector,
@@ -76,14 +76,14 @@ void ARangedWeapon::ExecuteFire()
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (OwnerPawn) {
 		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && FireCameraShakeClass) {
-			PC->ClientStartCameraShake(FireCameraShakeClass);
+		if (PC && CurrentRangedStat.FireCameraShakeClass) {
+			PC->ClientStartCameraShake(CurrentRangedStat.FireCameraShakeClass);
 
 			float RecoilAmount = -0.5f; // RecoilCurve 부재 시 기본값
 			float RecoilMultiplier = 1.0f; // 속도에 따른 에임 반동 패널티
 
-			if (RecoilCurve) {
-				RecoilAmount = RecoilCurve->GetFloatValue(BurstCount);
+			if (CurrentRangedStat.RecoilCurve) {
+				RecoilAmount = CurrentRangedStat.RecoilCurve->GetFloatValue(BurstCount);
 			}
 
 			ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
@@ -126,7 +126,7 @@ void ARangedWeapon::StopAttack()
 
 bool ARangedWeapon::CanReload()
 {
-	if (CurrentAmmoInClip >= MaxAmmoPerClip || bIsReloading) {
+	if (CurrentAmmoInClip >= CurrentRangedStat.MaxAmmoPerClip || bIsReloading) {
 		return false;
 	}
 
@@ -137,7 +137,7 @@ void ARangedWeapon::Reload(int32 AvailableReserveAmmo)
 {
 	if (!CanReload() || AvailableReserveAmmo <= 0) return;
 
-	int32 RoomInClip = MaxAmmoPerClip - CurrentAmmoInClip;
+	int32 RoomInClip = CurrentRangedStat.MaxAmmoPerClip - CurrentAmmoInClip;
 	if (RoomInClip <= 0) return;
 
 	AmmoToReload = FMath::Min(RoomInClip, AvailableReserveAmmo);
@@ -147,15 +147,15 @@ void ARangedWeapon::Reload(int32 AvailableReserveAmmo)
 
 	UE_LOG(LogTemp, Log, TEXT("Reloading..."));
 
-	if (ReloadSound) {
-		UGameplayStatics::PlaySoundAtLocation(this, ReloadSound, GetActorLocation());
+	if (CurrentRangedStat.ReloadSound) {
+		UGameplayStatics::PlaySoundAtLocation(this, CurrentRangedStat.ReloadSound, GetActorLocation());
 	}
 
 	GetWorldTimerManager().SetTimer(
 		ReloadTimerHandle,
 		this,
 		&ARangedWeapon::FinishReload,
-		ReloadTime,
+		CurrentRangedStat.ReloadTime,
 		false
 	);
 }
@@ -232,7 +232,7 @@ bool ARangedWeapon::GetCrosshairTarget(FVector& OutHitLocation)
 	FVector WorldDirection = PC->PlayerCameraManager->GetCameraRotation().Vector();
 
 	// 사거리 계산
-	FVector End = Start + (WorldDirection * AttackRange);
+	FVector End = Start + (WorldDirection * CurrentRangedStat.AttackRange);
 
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
@@ -256,7 +256,21 @@ bool ARangedWeapon::GetCrosshairTarget(FVector& OutHitLocation)
 
 void ARangedWeapon::AddAmmoToClip(int32 AmmoToAdd)
 {
-	CurrentAmmoInClip = FMath::Clamp(CurrentAmmoInClip + AmmoToAdd, 0, MaxAmmoPerClip);
+	CurrentAmmoInClip = FMath::Clamp(CurrentAmmoInClip + AmmoToAdd, 0, CurrentRangedStat.MaxAmmoPerClip);
+}
+
+void ARangedWeapon::InitWeaponData()
+{
+	if (!WeaponDataHandle.IsNull())
+	{
+		FRangedWeaponStatRow* RowData = WeaponDataHandle.GetRow<FRangedWeaponStatRow>(TEXT("RangedWeaponDataLookup"));
+
+		if (RowData)
+		{
+			CurrentRangedStat = *RowData;
+			CurrentWeaponStat = *RowData;
+		}
+	}
 }
 
 void ARangedWeapon::CancelReload()

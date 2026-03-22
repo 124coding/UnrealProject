@@ -19,7 +19,6 @@ void USurvivalGameInstance::ResetCampaignData()
 
 	// 드론 (Drone) 데이터 초기화
 	SavedDroneStats = FDroneStats();
-	SavedDroneActiveSkill = EDroneActiveSkill::Knockback;
 }
 
 void USurvivalGameInstance::SaveGameToDisk(int SlotIndex)
@@ -33,7 +32,6 @@ void USurvivalGameInstance::SaveGameToDisk(int SlotIndex)
 		SaveObj->SavedAttributeData = this->PlayerAttributeData;
 		SaveObj->SavedCombatData = this->PlayerCombatData;
 		SaveObj->SavedDroneStats = this->SavedDroneStats;
-		SaveObj->SavedDroneActiveSkill = this->SavedDroneActiveSkill;
 		SaveObj->SavedLevelName = this->SavedLevelName;
 
 		// 하드에 .sav 파일로 굽기
@@ -52,7 +50,6 @@ void USurvivalGameInstance::LoadGameFromDisk(int SlotIndex)
 			this->PlayerAttributeData = LoadObj->SavedAttributeData;
 			this->PlayerCombatData = LoadObj->SavedCombatData;
 			this->SavedDroneStats = LoadObj->SavedDroneStats;
-			this->SavedDroneActiveSkill = LoadObj->SavedDroneActiveSkill;
 			this->SavedLevelName = LoadObj->SavedLevelName;
 		}
 	}

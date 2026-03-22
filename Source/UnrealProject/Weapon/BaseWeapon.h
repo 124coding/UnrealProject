@@ -6,6 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "../Interface/Interactable.h"
 #include "../EnumTypes/WeaponTypes.h"
+#include "DataTable/BaseWeaponStatRow.h"
+
 #include "BaseWeapon.generated.h"
 
 UCLASS()
@@ -18,14 +20,14 @@ public:
 	ABaseWeapon();
 
 	// Set Weapon Type in Blueprint
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Stat")
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon Stat")
 	EWeaponSlot WeaponType;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	USoundBase* AttackSound;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	UAnimMontage* FireAnimation;
+	UAnimMontage* FireAnimation;*/
 
 protected:
 	// Called when the game starts or when spawned
@@ -62,6 +64,17 @@ public:
 	class UInputMappingContext* WeaponMappingContext;
 
 protected:
+
+	virtual void InitWeaponData();
+
+	// 에디터에서 엑셀 파일의 몇 번째 줄을 읽을지 선택하는 Handle
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Data")
+	FDataTableRowHandle WeaponDataHandle;
+
+	// 게임 시작 시 엑셀에서 뽑아온 원본 데이터를 복사해서 들게 함
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon|Stat")
+	FBaseWeaponStatRow CurrentWeaponStat;
+
 	// 마지막 공격시간
 	double LastAttackTime = 0.0f;
 
@@ -74,27 +87,27 @@ protected:
 	UPROPERTY(VisibleAnywhere)
 	class USphereComponent* AreaSphere; // 상호작용 감지용(LineTrace 안쓸 때 대비)
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|WeaponStat")
-	float Damage = 0.0f;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|WeaponStat")
+	//float Damage = 0.0f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|WeaponStat")
-	float AttackRate = 0.5f;
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|WeaponStat")
+	//float AttackRate = 0.5f;
 
-	// 사거리
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|WeaponStat")
-	float AttackRange = 5000.0f;
+	//// 사거리
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|WeaponStat")
+	//float AttackRange = 5000.0f;
 
 	// 공격 모드
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	EWeaponFireMode FireMode = EWeaponFireMode::Single;
+	/*UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	EWeaponFireMode FireMode = EWeaponFireMode::Single;*/
 
 	// 점사 시 한번에 공격하는 횟수
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|FireMode", meta = (EditCondition = "FireMode == EWeaponFireMode::Burst"))
-	int32 MaxBurstCount = 3;
+	//UPROPERTY(EditDefaultsOnly, Category = "Combat|FireMode", meta = (EditCondition = "FireMode == EWeaponFireMode::Burst"))
+	//int32 MaxBurstCount = 3;
 
-	// 점사 시 공격 속도
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|FireMode", meta = (EditCondition = "FireMode == EWeaponFireMode::Burst"))
-	float BurstFireRate = 0.2;
+	//// 점사 시 공격 속도
+	//UPROPERTY(EditDefaultsOnly, Category = "Combat|FireMode", meta = (EditCondition = "FireMode == EWeaponFireMode::Burst"))
+	//float BurstFireRate = 0.2f;
 
 	// 타이머
 	FTimerHandle FireTimerHandle;
@@ -103,9 +116,13 @@ protected:
 	int32 CurrentBurstCount = 0;
 
 	// 무기별 넉백 강도
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	float KnockbackPower = 500.0f;
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float KnockbackPower = 500.0f;*/
 
 public:
-	float GetKnockbackPower() const { return KnockbackPower; }
+	float GetKnockbackPower() const { return CurrentWeaponStat.KnockbackPower; }
+
+	EWeaponSlot GetWeaponType() const {
+		return CurrentWeaponStat.WeaponType;
+	}
 };

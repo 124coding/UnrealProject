@@ -45,6 +45,8 @@ void ABaseWeapon::BeginPlay()
 	Super::BeginPlay();
 	
 	this->SetWeaponState(EWeaponState::Dropped);
+
+	InitWeaponData();
 }
 
 // Called every frame
@@ -69,7 +71,7 @@ bool ABaseWeapon::CanAttack()
 
 	// 시간 계산해서 공격 속도 체크
 	double CurrentTime = GetWorld()->GetTimeSeconds();
-	if (CurrentTime - LastAttackTime < AttackRate) {
+	if (CurrentTime - LastAttackTime < CurrentWeaponStat.AttackRate) {
 		UE_LOG(LogTemp, Log, TEXT("Cant Attack So Fast"));
 		return false;
 	}
@@ -80,20 +82,20 @@ bool ABaseWeapon::CanAttack()
 
 void ABaseWeapon::OnAttack()
 {
-	if (FireMode == EWeaponFireMode::Single)
+	if (CurrentWeaponStat.FireMode == EWeaponFireMode::Single)
 	{
 		// 단발 (Single)
 		ExecuteFire();
 	}
-	else if (FireMode == EWeaponFireMode::Auto)
+	else if (CurrentWeaponStat.FireMode == EWeaponFireMode::Auto)
 	{
 		// 연사 (Auto)
 		ExecuteFire();
 		GetWorldTimerManager().SetTimer(
-			FireTimerHandle, this, &ABaseWeapon::ExecuteFire, AttackRate, true
+			FireTimerHandle, this, &ABaseWeapon::ExecuteFire, CurrentWeaponStat.AttackRate, true
 		);
 	}
-	else if (FireMode == EWeaponFireMode::Burst)
+	else if (CurrentWeaponStat.FireMode == EWeaponFireMode::Burst)
 	{
 		// 점사 (Burst)
 		CurrentBurstCount = 0;
@@ -103,7 +105,7 @@ void ABaseWeapon::OnAttack()
 
 void ABaseWeapon::StopAttack() {
 
-	if (FireMode == EWeaponFireMode::Auto)
+	if (CurrentWeaponStat.FireMode == EWeaponFireMode::Auto)
 	{
 		GetWorldTimerManager().ClearTimer(FireTimerHandle);
 	}
@@ -123,27 +125,27 @@ void ABaseWeapon::ExecuteFire()
 	if (OwnerCharacter->IsDead()) StopAttack();
 
 	// 공격 소리 존재 시 소리 출력
-	if (AttackSound != nullptr)
+	if (CurrentWeaponStat.AttackSound != nullptr)
 	{
-		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
+		UGameplayStatics::PlaySoundAtLocation(this, CurrentWeaponStat.AttackSound, GetActorLocation());
 
 		// 소리를 적들이 들을 수 있게 함
 		MakeNoise(1.0f, OwnerCharacter, GetActorLocation());
 	}
 
-	if (FireAnimation != nullptr) {
+	if (CurrentWeaponStat.FireAnimation != nullptr) {
 		// Get the animation object for the arms mesh
 		UAnimInstance* AnimInstance = OwnerCharacter->GetMesh1P()->GetAnimInstance();
 		if (AnimInstance != nullptr)
 		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
+			AnimInstance->Montage_Play(CurrentWeaponStat.FireAnimation, 1.f);
 		}
 	}
 }
 
 void ABaseWeapon::HandleBurstFire()
 {
-	if (CurrentBurstCount >= MaxBurstCount) return;
+	if (CurrentBurstCount >= CurrentWeaponStat.MaxBurstCount) return;
 
 	// 한번 공격
 	ExecuteFire();
@@ -151,10 +153,10 @@ void ABaseWeapon::HandleBurstFire()
 
 	// 남은 공격 횟수가 있다면 다시 호출
 
-	if (CurrentBurstCount < MaxBurstCount)
+	if (CurrentBurstCount < CurrentWeaponStat.MaxBurstCount)
 	{
 		GetWorldTimerManager().SetTimer(
-			FireTimerHandle, this, &ABaseWeapon::HandleBurstFire, BurstFireRate, false
+			FireTimerHandle, this, &ABaseWeapon::HandleBurstFire, CurrentWeaponStat.BurstFireRate, false
 		);
 	}
 }
@@ -234,6 +236,19 @@ void ABaseWeapon::SetWeaponState(EWeaponState NewState)
 		// Tick 끄기
 		SetActorTickEnabled(false);
 		break;
+	}
+}
+
+void ABaseWeapon::InitWeaponData()
+{
+	if (!WeaponDataHandle.IsNull())
+	{
+		FBaseWeaponStatRow* RowData = WeaponDataHandle.GetRow<FBaseWeaponStatRow>(TEXT("WeaponDataLookup"));
+
+		if (RowData)
+		{
+			CurrentWeaponStat = *RowData;
+		}
 	}
 }
 

@@ -24,7 +24,8 @@ void UCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	CarriedAmmoFill();
+	USurvivalGameInstance* GI = Cast<USurvivalGameInstance>(GetWorld()->GetGameInstance());
+	if (GI) LoadDataFromGI(GI);
 
 	// 테스트용 기본 무기 생성
 	/*if (DefaultWeaponClass) {
@@ -117,7 +118,7 @@ void UCombatComponent::CarriedAmmoFill()
 
 	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon))
 	{
-		EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+		EAmmoType AmmoType = RangedWeapon->GetAmmoType();
 		int32 AvailableAmmo = CarriedAmmo.Contains(AmmoType) ? CarriedAmmo[AmmoType] : -1;
 
 		OnReserveAmmoChanged.Broadcast(AvailableAmmo);
@@ -136,7 +137,7 @@ void UCombatComponent::PickupWeapon(ABaseWeapon* NewWeapon)
 {
 	if (NewWeapon == nullptr) return;
 	
-	EWeaponSlot Slot = NewWeapon->WeaponType;
+	EWeaponSlot Slot = NewWeapon->GetWeaponType();
 
 	// 투척 특별 관리
 	if (Slot == EWeaponSlot::Throwable && CarriedWeapons.Contains(Slot)) {
@@ -231,7 +232,7 @@ void UCombatComponent::EquipWeaponBySlot(EWeaponSlot SlotToEquip)
 
 	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon))
 	{
-		EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+		EAmmoType AmmoType = RangedWeapon->GetAmmoType();
 		int32 AvailableAmmo = CarriedAmmo.Contains(AmmoType) ? CarriedAmmo[AmmoType] : -1;
 
 		if (OnReserveAmmoChanged.IsBound()) {
@@ -285,7 +286,7 @@ void UCombatComponent::Reload() {
 	if (CurrentWeapon == nullptr) return;
 
 	if (ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon)) {
-		EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+		EAmmoType AmmoType = RangedWeapon->GetAmmoType();
 
 		int32 AvailableAmmo = 0;
 		if (CarriedAmmo.Contains(AmmoType))
@@ -305,7 +306,7 @@ void UCombatComponent::CycleWeapon(bool bScrollDown)
 	uint8 CurrentSlotIndex = 0;
 
 	if (CurrentWeapon) {
-		CurrentSlotIndex = (uint8)CurrentWeapon->WeaponType;
+		CurrentSlotIndex = (uint8)CurrentWeapon->GetWeaponType();
 	}
 
 	uint8 NextSlotIndex = CurrentSlotIndex;
@@ -339,7 +340,7 @@ void UCombatComponent::HandleWeaponReloadFinished(int32 AmmoConsumed)
 	ARangedWeapon* RangedWeapon = Cast<ARangedWeapon>(CurrentWeapon);
 	if (!RangedWeapon) return;
 
-	EAmmoType AmmoType = RangedWeapon->WeaponAmmoType;
+	EAmmoType AmmoType = RangedWeapon->GetAmmoType();
 
 	if (AmmoConsumed > 0)
 	{
@@ -352,7 +353,7 @@ void UCombatComponent::HandleWeaponReloadFinished(int32 AmmoConsumed)
 void UCombatComponent::DiscardEmptyWeapon()
 {
 	if (CurrentWeapon) {
-		CarriedWeapons.Remove(CurrentWeapon->WeaponType);
+		CarriedWeapons.Remove(CurrentWeapon->GetWeaponType());
 
 		CurrentWeapon->Destroy();
 		CurrentWeapon = nullptr;
@@ -401,7 +402,7 @@ void UCombatComponent::SaveDataToGI(USurvivalGameInstance* GI)
 
 void UCombatComponent::LoadDataFromGI(USurvivalGameInstance* GI)
 {
-	if (!GI) return;
+	if (!GI || !GI->bIsSaveDataValid) return;
 
 	DefaultWeaponClass = GI->PlayerCombatData.DefaultWeaponClass;
 	CarriedAmmo = GI->PlayerCombatData.CarriedAmmo;

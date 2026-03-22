@@ -29,6 +29,21 @@ void UDroneComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	if (!DroneDataHandle.IsNull())
+	{
+		// 엑셀에서 내가 선택한 행(Row)을 FDroneStats 타입으로 찾아오기
+		FDroneStats* RowData = DroneDataHandle.GetRow<FDroneStats>(TEXT("DroneDataLookup"));
+
+		if (RowData)
+		{
+			// 원본 데이터를 내 실시간 스탯(CurrentStats)에 통째로 복사(Copy)
+			CurrentStats = *RowData;
+		}
+	}
+
+	USurvivalGameInstance* GI = Cast<USurvivalGameInstance>(GetWorld()->GetGameInstance());
+	if (GI) LoadDataFromGI(GI);
+
 	// 런타임에 레이더 생성 및 플레이어 부착
 	DetectionSphere = NewObject<USphereComponent>(GetOwner(), TEXT("DroneAttackRadar"));
 	if (DetectionSphere) {
@@ -60,9 +75,9 @@ void UDroneComponent::BeginPlay()
 		DroneMesh->SetUsingAbsoluteLocation(true);
 		DroneMesh->SetUsingAbsoluteRotation(true);
 
-		if (DroneMeshAsset)
+		if (CurrentStats.DroneMeshAsset)
 		{
-			DroneMesh->SetStaticMesh(DroneMeshAsset);
+			DroneMesh->SetStaticMesh(CurrentStats.DroneMeshAsset);
 		}
 
 		DroneMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
@@ -212,10 +227,10 @@ void UDroneComponent::OnAttackTick()
 				UDamageType::StaticClass()
 			);
 
-			if (MuzzleFlashVFX)
+			if (CurrentStats.MuzzleFlashVFX)
 			{
 				UNiagaraFunctionLibrary::SpawnSystemAttached(
-					MuzzleFlashVFX,
+					CurrentStats.MuzzleFlashVFX,
 					DroneMesh,
 					TEXT("MuzzleSocket"),
 					FVector::ZeroVector,
@@ -256,7 +271,7 @@ void UDroneComponent::ActiveDroneSkill()
 
 	bool bSkillExecuted = false;
 
-	switch (CurrentActiveSkill) {
+	switch (CurrentStats.CurrentActiveSkill) {
 	case EDroneActiveSkill::Knockback:
 		DoKnockback();
 		bSkillExecuted = true;
@@ -530,7 +545,7 @@ void UDroneComponent::ApplyUpgrade(EDroneUpgradeType Type, float Value)
 
 	case EDroneUpgradeType::ReviveAmount:
 		CurrentStats.ReviveHealthPercent += Value;
-		CurrentStats.ReviveHealthPercent = FMath::Max(100.0f, CurrentStats.ReviveHealthPercent);
+		CurrentStats.ReviveHealthPercent = FMath::Min(100.0f, CurrentStats.ReviveHealthPercent);
 		break;
 
 
@@ -554,13 +569,11 @@ void UDroneComponent::SaveDataToGI(USurvivalGameInstance* GI)
 	if (!GI) return;
 
 	GI->SavedDroneStats = CurrentStats;
-	GI->SavedDroneActiveSkill = CurrentActiveSkill;
 }
 
 void UDroneComponent::LoadDataFromGI(USurvivalGameInstance* GI)
 {
-	if (!GI) return;
+	if (!GI || !GI->bIsSaveDataValid) return;
 
 	CurrentStats = GI->SavedDroneStats;
-	CurrentActiveSkill = GI->SavedDroneActiveSkill;
 }

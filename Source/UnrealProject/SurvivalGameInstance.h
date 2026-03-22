@@ -62,6 +62,9 @@ class UNREALPROJECT_API USurvivalGameInstance : public UGameInstance
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(BlueprintReadWrite, Category = "SaveData")
+	bool bIsSaveDataValid = false;
+
 	UPROPERTY(BlueprintReadWrite, Category = "Save Data")
 	FAttributeSaveData PlayerAttributeData;
 
@@ -70,9 +73,6 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, Category = "Save Data|Drone")
 	FDroneStats SavedDroneStats;
-
-	UPROPERTY(BlueprintReadWrite, Category = "Save Data|Drone")
-	EDroneActiveSkill SavedDroneActiveSkill;
 
 	UPROPERTY(BlueprintReadWrite, Category = "Save Data|Progress")
 	FName SavedLevelName;

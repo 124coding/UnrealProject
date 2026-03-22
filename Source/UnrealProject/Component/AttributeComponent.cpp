@@ -108,7 +108,7 @@ void UAttributeComponent::SaveDataToGI(USurvivalGameInstance* GI)
 
 void UAttributeComponent::LoadDataFromGI(USurvivalGameInstance* GI)
 {
-	if (!GI) return;
+	if (!GI || !GI->bIsSaveDataValid) return;
 	MaxHealth = GI->PlayerAttributeData.MaxHealth;
 	CurrentHealth = GI->PlayerAttributeData.CurrentHealth;
 }

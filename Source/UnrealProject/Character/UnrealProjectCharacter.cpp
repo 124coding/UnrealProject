@@ -213,6 +213,8 @@ void AUnrealProjectCharacter::SaveAllPlayerState()
 	if (CombatComponent) CombatComponent->SaveDataToGI(GI);
 	if (DroneComponent) DroneComponent->SaveDataToGI(GI);
 
+	GI->bIsSaveDataValid = true;
+
 	UE_LOG(LogTemp, Warning, TEXT("Component Data Move to GameInstance"));
 }
 
@@ -222,8 +224,6 @@ void AUnrealProjectCharacter::LoadAllPlayerState()
 	if (!GI) return;
 
 	if (AttributeComponent) AttributeComponent->LoadDataFromGI(GI);
-	if (CombatComponent) CombatComponent->LoadDataFromGI(GI);
-	if (DroneComponent) DroneComponent->LoadDataFromGI(GI);
 
 	UE_LOG(LogTemp, Warning, TEXT("Component Data Move from GameInstance"));
 }

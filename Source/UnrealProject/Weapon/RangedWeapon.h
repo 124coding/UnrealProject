@@ -7,6 +7,7 @@
 #include "Camera/CameraShakeBase.h"
 
 #include "../EnumTypes/WeaponTypes.h"
+#include "DataTable/RangedWeaponStatRow.h"
 
 #include "RangedWeapon.generated.h"
 
@@ -41,19 +42,19 @@ public:
 	void FinishReload();
 
 	void SetMaxAmmoInClip(int32 SetCount) {
-		MaxAmmoPerClip = SetCount;
+		CurrentRangedStat.MaxAmmoPerClip = SetCount;
 	}
 
 	int32 GetMaxAmmoInClip() {
-		return MaxAmmoPerClip;
+		return CurrentRangedStat.MaxAmmoPerClip;
 	}
 
 	void MinusMaxAmmoInClip() {
-		MaxAmmoPerClip--;
+		CurrentRangedStat.MaxAmmoPerClip--;
 	}
 
 	void PlusMaxAmmoInClip() {
-		MaxAmmoPerClip++;
+		CurrentRangedStat.MaxAmmoPerClip++;
 	}
 
 	void SetCurrentAmmoInClip(int32 SetCount);
@@ -76,17 +77,22 @@ protected:
 	void AddAmmoToClip(int32 AmmoToAdd);
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	virtual void InitWeaponData() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RangedWeapon|Stat")
+	FRangedWeaponStatRow CurrentRangedStat;
+
+	/*UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	USoundBase* ReloadSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "RangedWeapon|Ammo")
-	int32 MaxAmmoPerClip = 30;
+	int32 MaxAmmoPerClip = 30;*/
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "RangedWeapon|Ammo")
-	int32 CurrentAmmoInClip = MaxAmmoPerClip;
+	int32 CurrentAmmoInClip;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "RangedWeapon|Stats")
-	float ReloadTime = 1.5f;
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "RangedWeapon|Stats")
+	float ReloadTime = 1.5f;*/
 
 	// 재장전 타이머가 끝날 때 탄창에 실제로 더해줄 임시 총알 수
 	int32 AmmoToReload = 0;
@@ -98,20 +104,20 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "RangedWeapon|FX")
 	FName MuzzleSocketName = TEXT("MuzzleSocket");
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadonly, Category = "RangedWeapon|FX")
-	class UNiagaraSystem* MuzzleFlashFX = nullptr; // 나이아가라라면 UNiagaraSystem
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadonly, Category = "RangedWeapon|FX")
+	class UNiagaraSystem* MuzzleFlashFX = nullptr;*/ // 나이아가라라면 UNiagaraSystem
 
 	// 카메라 쉐이크
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	TSubclassOf<class UCameraShakeBase> FireCameraShakeClass;
+	/*UPROPERTY(EditAnywhere, Category = "Combat")
+	TSubclassOf<class UCameraShakeBase> FireCameraShakeClass;*/
 
 	// Recoil Curve
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
-	class UCurveFloat* RecoilCurve;
+	/*UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	class UCurveFloat* RecoilCurve;*/
 
 	// 반동이 얼마나 빠르게 적용될지
-	UPROPERTY(EditAnywhere, Category = "Combat")
-	float RecoilInterpSpeed = 15.0f;
+	/*UPROPERTY(EditAnywhere, Category = "Combat")
+	float RecoilInterpSpeed = 15.0f;*/
 
 protected:
 
@@ -133,9 +139,13 @@ public:
 	// 장전을 강제로 멈추는 함수
 	void CancelReload();
 
+	EAmmoType GetAmmoType() const {
+		return CurrentRangedStat.WeaponAmmoType;
+	}
+
 	// 이 무기가 소모하는 총알의 종류
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Ammo")
-	EAmmoType WeaponAmmoType = EAmmoType::EAT_AssaultRifle;
+	/*UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Ammo")
+	EAmmoType WeaponAmmoType = EAmmoType::EAT_AssaultRifle;*/
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnAmmo OnAmmoDelegate;

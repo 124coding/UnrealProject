@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "RangedWeapon.h"
+#include "DataTable/HitScanWeaponStatRow.h"
 #include "HitScanWeapon.generated.h"
 
 /**
@@ -19,14 +20,19 @@ public:
 	virtual void ExecuteFire() override;
 
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
-	class UParticleSystem* ImpactParticles; // 벽/적에 맞았을 때 뜨는 이펙트 (나이아가라로 변경 가능)
+	virtual void InitWeaponData() override;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
-	class USoundBase* ImpactSound; // 맞았을 때 나는 소리
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HitScan|Stat")
+	FHitScanWeaponStatRow CurrentHitScanStat;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
-	class UParticleSystem* BeamParticles; // 총알 궤적 (스모크 트레일)
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
+	//class UParticleSystem* ImpactParticles; // 벽/적에 맞았을 때 뜨는 이펙트 (나이아가라로 변경 가능)
+
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
+	//class USoundBase* ImpactSound; // 맞았을 때 나는 소리
+
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
+	//class UParticleSystem* BeamParticles; // 총알 궤적 (스모크 트레일)
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadonly, Category = "HitScan|FX")
 	FName BeamTargetParamName = TEXT("Target"); // 파티클 시스템 내부에서 목표 지점

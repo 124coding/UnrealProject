@@ -15,14 +15,14 @@ void AProjectileWeapon::BeginPlay()
 	Super::BeginPlay();
 
 	// 풀 초기화
-	ProjectilePool->InitializePool(ProjectileClass, MaxAmmoPerClip, this);
+	ProjectilePool->InitializePool(CurrentProjectileStat.ProjectileClass, CurrentProjectileStat.MaxAmmoPerClip, this);
 }
 
 void AProjectileWeapon::ExecuteFire()
 {
 	Super::ExecuteFire();
 
-	if (!ProjectileClass || !ProjectilePool) return;
+	if (!CurrentProjectileStat.ProjectileClass || !ProjectilePool) return;
 
 	if (const UStaticMeshComponent* Mesh = WeaponMesh) {
 		FVector SocketLocation = Mesh->GetSocketLocation(MuzzleSocketName);
@@ -50,6 +50,21 @@ void AProjectileWeapon::ExecuteFire()
 				float CurrentSpeed = GetLaunchSpeed();
 				Projectile->Launch(LaunchDir, CurrentSpeed);
 			}
+		}
+	}
+}
+
+void AProjectileWeapon::InitWeaponData()
+{
+	if (!WeaponDataHandle.IsNull())
+	{
+		FProjectileWeaponStatRow* RowData = WeaponDataHandle.GetRow<FProjectileWeaponStatRow>(TEXT("ProjectileWeaponDataLookup"));
+
+		if (RowData)
+		{
+			CurrentProjectileStat = *RowData;
+			CurrentRangedStat = *RowData;
+			CurrentWeaponStat = *RowData;
 		}
 	}
 }

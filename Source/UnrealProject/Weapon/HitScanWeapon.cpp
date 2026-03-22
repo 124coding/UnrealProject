@@ -33,7 +33,7 @@ void AHitScanWeapon::ExecuteFire()
 
 	// 시작점: 카메라 위치
 	// 끝점: 카메라 위치 + (방향 * 사거리)
-	FVector TraceEnd = Location + (ShotDirection * AttackRange);
+	FVector TraceEnd = Location + (ShotDirection * CurrentHitScanStat.AttackRange);
 
 	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
@@ -67,7 +67,7 @@ void AHitScanWeapon::ExecuteFire()
 			UE_LOG(LogTemp, Warning, TEXT("HIT: %s"), *HitActor->GetName());
 			UGameplayStatics::ApplyDamage(
 				HitActor,
-				Damage,
+				CurrentRangedStat.Damage,
 				OwnerController,
 				this,
 				UDamageType::StaticClass()
@@ -78,16 +78,16 @@ void AHitScanWeapon::ExecuteFire()
 			}
 		}
 
-		if (ImpactParticles) {
+		if (CurrentHitScanStat.ImpactParticles) {
 			UGameplayStatics::SpawnEmitterAtLocation(
 				GetWorld(),
-				ImpactParticles,
+				CurrentHitScanStat.ImpactParticles,
 				HitResult.ImpactPoint,
 				HitResult.ImpactNormal.Rotation() // 벽의 각도에 맞춰 이펙트 회전
 			);
 		}
 
-		if (ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, HitResult.Location);
+		if (CurrentHitScanStat.ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, CurrentHitScanStat.ImpactSound, HitResult.Location);
 
 		DrawDebugLine(
 			GetWorld(),
@@ -100,10 +100,10 @@ void AHitScanWeapon::ExecuteFire()
 			0.5f                // 선 두께
 		);
 
-		if (BeamParticles) {
+		if (CurrentHitScanStat.BeamParticles) {
 			// 이펙트를 총구에 부착해서 생성
 			UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAttached(
-				BeamParticles,
+				CurrentHitScanStat.BeamParticles,
 				WeaponMesh,
 				MuzzleSocketName,
 				FVector::ZeroVector,
@@ -115,6 +115,21 @@ void AHitScanWeapon::ExecuteFire()
 			{
 				Beam->SetVectorParameter(BeamTargetParamName, BeamEndPoint);
 			}
+		}
+	}
+}
+
+void AHitScanWeapon::InitWeaponData()
+{
+	if (!WeaponDataHandle.IsNull())
+	{
+		FHitScanWeaponStatRow* RowData = WeaponDataHandle.GetRow<FHitScanWeaponStatRow>(TEXT("HitScanWeaponDataLookup"));
+
+		if (RowData)
+		{
+			CurrentHitScanStat = *RowData;
+			CurrentRangedStat = *RowData;
+			CurrentWeaponStat = *RowData;
 		}
 	}
 }

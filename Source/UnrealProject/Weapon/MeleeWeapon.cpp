@@ -8,7 +8,7 @@
 
 AMeleeWeapon::AMeleeWeapon()
 {
-	WeaponType = EWeaponSlot::Melee;
+	CurrentWeaponStat.WeaponType = EWeaponSlot::Melee;
 }
 
 //void AMeleeWeapon::TickAttack()
@@ -87,7 +87,7 @@ void AMeleeWeapon::ExecuteFire()
 	/*FVector Start = ViewLocation;
 	FVector End = Start + (ViewRotation.Vector() * AttackRange);*/
 
-	FVector HitLocation = ViewLocation + (ViewRotation.Vector() * (AttackRange * 0.5f));
+	FVector HitLocation = ViewLocation + (ViewRotation.Vector() * (CurrentMeleeStat.AttackRange * 0.5f));
 
 	// 충돌 검사
 	TArray<FHitResult> HitResults;
@@ -112,7 +112,7 @@ void AMeleeWeapon::ExecuteFire()
 		HitLocation,
 		FQuat::Identity,
 		ECC_PlayerProjectile,
-		FCollisionShape::MakeSphere(TraceRadius),
+		FCollisionShape::MakeSphere(CurrentMeleeStat.TraceRadius),
 		QueryParams
 	);
 
@@ -132,7 +132,7 @@ void AMeleeWeapon::ExecuteFire()
 		2.0f
 	);*/
 
-	DrawDebugSphere(GetWorld(), HitLocation, TraceRadius, 12, FColor::Red, false, 2.0f);
+	DrawDebugSphere(GetWorld(), HitLocation, CurrentMeleeStat.TraceRadius, 12, FColor::Red, false, 2.0f);
 
 	// Sweep 방식
 	//if (bHit)
@@ -174,7 +174,7 @@ void AMeleeWeapon::ExecuteFire()
 
 			UGameplayStatics::ApplyDamage(
 				HitActor,
-				Damage,
+				CurrentMeleeStat.Damage,
 				OwnerPawn->GetController(),
 				this,
 				UDamageType::StaticClass()
@@ -194,4 +194,18 @@ void AMeleeWeapon::ExecuteFire()
 void AMeleeWeapon::EndAttack()
 {
 	// IgnoreActors.Empty();
+}
+
+void AMeleeWeapon::InitWeaponData()
+{
+	if (!WeaponDataHandle.IsNull())
+	{
+		FMeleeWeaponStatRow* RowData = WeaponDataHandle.GetRow<FMeleeWeaponStatRow>(TEXT("MeleeWeaponDataLookup"));
+
+		if (RowData)
+		{
+			CurrentMeleeStat = *RowData;
+			CurrentWeaponStat = *RowData;
+		}
+	}
 }
