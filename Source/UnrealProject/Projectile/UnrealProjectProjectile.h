@@ -30,7 +30,7 @@ protected:
 
 protected:
 	// 투사체의 기본 데미지
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat|Damage")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Combat|Damage")
 	float BaseDamage = 20.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Components")
@@ -43,26 +43,26 @@ protected:
 	FTimerHandle LifeSpanTimer;
 
 	// 데미지 적용 방식
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	EDamageMethod DamageMethod = EDamageMethod::SingleTarget;
 
 	// 폭발 반경
-	UPROPERTY(EditDefaultsOnly, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
 	float ExplosionRadius = 200.0f;
 
 	// 광역 최소 데미지
-	UPROPERTY(EditDefaultsOnly, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
 	float MinimumDamage = 10.0f;
 
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Damage", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	UPROPERTY(VisibleAnywhere, Category = "Combat|Damage", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
 	float InnerRadius = 100.0f; // 100% 데미지 반경
 
 	// 폭발 조건 설정
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Explosion")
+	UPROPERTY(VisibleAnywhere, Category = "Combat|Explosion")
 	bool bExplodeOnTimer = false; // true면 수류탄처럼 시간에 의해 폭발
 
 	// 폭발 대기 시간 (수류탄 타이머)
-	UPROPERTY(EditDefaultsOnly, Category = "Combat|Explosion", meta = (EditCondition = "bExplodeOnTimer"))
+	UPROPERTY(VisibleAnywhere, Category = "Combat|Explosion", meta = (EditCondition = "bExplodeOnTimer"))
 	float ExplosionDelay = 3.0f;
 
 	// 폭발 타이머 핸들
@@ -102,5 +102,8 @@ public:
 
 	// 타겟을 향해 날아가는 로직
 	virtual void LaunchTowards(FVector StartLoc, AActor* TargetActor);
+
+	// 초기화 함수
+	void InitProjectile(float tDamage, EDamageMethod tDamageMethod = EDamageMethod::SingleTarget, float tExplosionRadius = 0.f, float tMinimumDamage = 0.f, float tInnerRadius = 0.f, bool tbExplodeOnTimer = false, float tExplosionDelay = 0.f);
 };
 

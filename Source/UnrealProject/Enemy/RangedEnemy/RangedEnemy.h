@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "../BaseEnemy.h"
+#include "../DataTable/RangedEnemyStatRow.h"
 #include "RangedEnemy.generated.h"
 
 /**
@@ -19,13 +20,21 @@ public:
 
 	virtual void OnAttack() override;
 
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TSubclassOf<class AUnrealProjectProjectile> ProjectileClass;
+protected:
 
-	// 원거리 공격 몽타주
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	UAnimMontage* RangedAttackMontage;
+	virtual void InitEnemyData() override;
+
+	// 게임 시작 시 엑셀에서 뽑아온 원본 데이터를 복사해서 들게 함
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ranged|Stat")
+	FRangedEnemyStatRow CurrentRangedStat;
+
+public:
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	//TSubclassOf<class AUnrealProjectProjectile> ProjectileClass;
+
+	//// 원거리 공격 몽타주
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	//UAnimMontage* RangedAttackMontage;
 	
 	// 애님 노티파이가 부를 함수
 	UFUNCTION(BlueprintCallable, Category = "Combat")

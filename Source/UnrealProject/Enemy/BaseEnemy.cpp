@@ -37,6 +37,8 @@ void ABaseEnemy::BeginPlay()
 {
 	Super::BeginPlay();
 
+	InitEnemyData();
+
 	if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &ABaseEnemy::HandleDeath);
 	}
@@ -107,7 +109,7 @@ void ABaseEnemy::SetCommandTarget(AActor* NewTarget)
 	}
 }
 
-void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount)
+void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageMultiplier)
 {
 	// 트레이스 시작 위치
 	FVector Start = GetMesh()->GetSocketLocation(SocketName);
@@ -143,7 +145,7 @@ void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSi
 		if (HitActor) {
 			UGameplayStatics::ApplyDamage(
 				HitActor,
-				DamageAmount,
+				CurrentEnemyStat.Damage * DamageMultiplier,
 				GetController(),
 				this,
 				UDamageType::StaticClass()
@@ -236,19 +238,19 @@ void ABaseEnemy::PlayDirectionalHitReact(const FVector& ImpactPoint)
 	UAnimMontage* MontageToPlay = nullptr;
 
 	if (Theta >= -70.0f && Theta <= 70.0f) {
-		MontageToPlay = HitReactMontage_Front;
+		MontageToPlay = CurrentEnemyStat.HitReactMontage_Front;
 		UE_LOG(LogTemp, Warning, TEXT("Front Hit"));
 	}
 	else if (Theta >= -110.0f && Theta < -70.0f) {
-		MontageToPlay = HitReactMontage_Left;
+		MontageToPlay = CurrentEnemyStat.HitReactMontage_Left;
 		UE_LOG(LogTemp, Warning, TEXT("Left Hit"));
 	}
 	else if (Theta > 70.0f && Theta <= 110.0f) {
-		MontageToPlay = HitReactMontage_Right;
+		MontageToPlay = CurrentEnemyStat.HitReactMontage_Right;
 		UE_LOG(LogTemp, Warning, TEXT("Right Hit"));
 	}
 	else {
-		MontageToPlay = HitReactMontage_Back;
+		MontageToPlay = CurrentEnemyStat.HitReactMontage_Back;
 		UE_LOG(LogTemp, Warning, TEXT("Back Hit"));
 	}
 
@@ -466,7 +468,7 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 	GetMesh()->SetSimulatePhysics(true);*/
 
 	// 사망 애니메이션
-	float DeathAnimDuration = PlayAnimMontage(DeathMontage);
+	float DeathAnimDuration = PlayAnimMontage(CurrentEnemyStat.DeathMontage);
 	if (DeathAnimDuration > 0.f)
 	{
 		// 애니메이션이 끝나기 직전에 애니메이션을 굳히기
@@ -514,6 +516,19 @@ void ABaseEnemy::FreezeAnimation()
 	if (GetMesh())
 	{
 		GetMesh()->bPauseAnims = true;
+	}
+}
+
+void ABaseEnemy::InitEnemyData()
+{
+	if (!EnemyDataHandle.IsNull())
+	{
+		FBaseEnemyStatRow* RowData = EnemyDataHandle.GetRow<FBaseEnemyStatRow>(TEXT("EnemyDataLookup"));
+
+		if (RowData)
+		{
+			CurrentEnemyStat = *RowData;
+		}
 	}
 }
 

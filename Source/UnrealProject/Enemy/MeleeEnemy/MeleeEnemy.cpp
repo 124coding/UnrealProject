@@ -12,11 +12,11 @@ void AMeleeEnemy::OnAttack()
 {
 	Super::OnAttack();
 
-	if (MeleeAttackMontages.Num() > 0) {
+	if (CurrentMeleeStat.MeleeAttackMontages.Num() > 0) {
 		// ·£´ý ¼ýÀÚ »Ì¾Æ¼­ ´çÃ·µÈ ¸ùÅ¸ÁÖ °¡Á®¿Í Àç»ý
-		int32 RandomIndex = FMath::RandRange(0, MeleeAttackMontages.Num() - 1);
+		int32 RandomIndex = FMath::RandRange(0, CurrentMeleeStat.MeleeAttackMontages.Num() - 1);
 
-		UAnimMontage* SelectedMontage = MeleeAttackMontages[RandomIndex];
+		UAnimMontage* SelectedMontage = CurrentMeleeStat.MeleeAttackMontages[RandomIndex];
 
 		if (SelectedMontage) {
 			CurrentState = EEnemyState::EES_Attacking;
@@ -33,5 +33,19 @@ void AMeleeEnemy::OnAttack()
 			//}
 		}
 
+	}
+}
+
+void AMeleeEnemy::InitEnemyData()
+{
+	if (!EnemyDataHandle.IsNull())
+	{
+		FMeleeEnemyStatRow* RowData = EnemyDataHandle.GetRow<FMeleeEnemyStatRow>(TEXT("EnemyDataLookup"));
+
+		if (RowData)
+		{
+			CurrentMeleeStat = *RowData;
+			CurrentEnemyStat = *RowData;
+		}
 	}
 }

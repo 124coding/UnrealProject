@@ -12,18 +12,31 @@
 ARangedEnemy::ARangedEnemy()
 {
 	EnemyType = EEnemyType::Ranged;
-	AttackRange = 1000.0f;
 }
 
 void ARangedEnemy::OnAttack()
 {
 	Super::OnAttack();
 
-	if (RangedAttackMontage) {
+	if (CurrentRangedStat.RangedAttackMontage) {
 		CurrentState = EEnemyState::EES_Attacking;
-		PlayAnimMontage(RangedAttackMontage);
+		PlayAnimMontage(CurrentRangedStat.RangedAttackMontage);
 	}
 
+}
+
+void ARangedEnemy::InitEnemyData()
+{
+	if (!EnemyDataHandle.IsNull())
+	{
+		FRangedEnemyStatRow* RowData = EnemyDataHandle.GetRow<FRangedEnemyStatRow>(TEXT("EnemyDataLookup"));
+
+		if (RowData)
+		{
+			CurrentRangedStat = *RowData;
+			CurrentEnemyStat = *RowData;
+		}
+	}
 }
 
 void ARangedEnemy::FireProjectile()
@@ -33,7 +46,7 @@ void ARangedEnemy::FireProjectile()
 		return;
 	}
 
-	if (ProjectileClass) {
+	if (CurrentRangedStat.ProjectileClass) {
 		// 발사 위치
 		FVector SpawnLocation = GetMesh()->GetSocketLocation(TEXT("AttackSocket_hand_r"));
 
@@ -52,11 +65,14 @@ void ARangedEnemy::FireProjectile()
 
 			// 풀에서 꺼낸 후 투사체가 알아서 경로 설정
 			if (AUnrealProjectGameMode* GM = Cast<AUnrealProjectGameMode>(GetWorld()->GetAuthGameMode())) {
-				AActor* SpawnedActor = GM->SpawnProjectileFromPool(ProjectileClass, SpawnLocation, SpawnRotation);
+				AActor* SpawnedActor = GM->SpawnProjectileFromPool(CurrentRangedStat.ProjectileClass, SpawnLocation, SpawnRotation);
 
 				if (AArcProjectile* Proj = Cast<AArcProjectile>(SpawnedActor)) {
 					if (TargetActor) {
 						Proj->SetInstigator(this);
+						Proj->InitProjectile(
+							CurrentRangedStat.Damage
+						);
 						Proj->LaunchTowards(SpawnLocation, TargetActor);
 					}
 				}

@@ -9,7 +9,6 @@ UAN_AttackHit::UAN_AttackHit()
 	// 기본 설정
 	SocketName = TEXT("AttackSocket_hand_r");
 	HalfRadiusSize = 40.0f;
-	DamageAmount = 10.0f;
 }
 
 void UAN_AttackHit::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
@@ -21,7 +20,7 @@ void UAN_AttackHit::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* 
 		ABaseEnemy* Enemy = Cast<ABaseEnemy>(MeshComp->GetOwner());
 
 		if (Enemy) {
-			Enemy->PerformMeleeAttackHitCheck(SocketName, HalfRadiusSize, DamageAmount);
+			Enemy->PerformMeleeAttackHitCheck(SocketName, HalfRadiusSize, DamageMultiplier);
 		}
 	}
 }

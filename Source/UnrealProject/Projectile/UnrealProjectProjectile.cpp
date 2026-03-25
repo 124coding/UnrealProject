@@ -237,3 +237,14 @@ void AUnrealProjectProjectile::LaunchTowards(FVector StartLoc, AActor* TargetAct
 	
 	Launch(Direction);
 }
+
+void AUnrealProjectProjectile::InitProjectile(float tDamage, EDamageMethod tDamageMethod, float tExplosionRadius, float tMinimumDamage, float tInnerRadius, bool tbExplodeOnTimer, float tExplosionDelay)
+{
+	BaseDamage = tDamage;
+	DamageMethod = tDamageMethod;
+	ExplosionRadius = tExplosionRadius;
+	MinimumDamage = tMinimumDamage;
+	InnerRadius = tInnerRadius;
+	bExplodeOnTimer = tbExplodeOnTimer;
+	ExplosionDelay = tExplosionDelay;
+}

@@ -22,7 +22,7 @@ public:
 	FName SocketName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	float DamageAmount;
+	float DamageMultiplier = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
 	float HalfRadiusSize;

@@ -8,6 +8,7 @@
 #include "../Interface/HitInterface.h"
 #include "../Interface/PoolableInterface.h"
 #include "../EnumTypes/CharacterTypes.h"
+#include "DataTable/BaseEnemyStatRow.h"
 #include "BaseEnemy.generated.h"
 
 UCLASS()
@@ -43,7 +44,7 @@ public:
 	void SetCommandTarget(AActor* NewTarget);
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageAmount);
+	void PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSize, float DamageMultiplier);
 
 protected:
 	// 공격 몽타주 끝났을때 호출
@@ -72,40 +73,57 @@ public:
 	void Deactivate();
 
 protected:
-	// 앞에서 맞았을 때
-	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
-	UAnimMontage* HitReactMontage_Front;
+	//// 앞에서 맞았을 때
+	//UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	//UAnimMontage* HitReactMontage_Front;
 
-	// 뒤에서 맞았을 때
-	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
-	UAnimMontage* HitReactMontage_Back;
+	//// 뒤에서 맞았을 때
+	//UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	//UAnimMontage* HitReactMontage_Back;
 
-	// 왼쪽 맞음
-	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
-	UAnimMontage* HitReactMontage_Left;
+	//// 왼쪽 맞음
+	//UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	//UAnimMontage* HitReactMontage_Left;
 
-	// 오른쪽 맞음
-	UPROPERTY(EditAnywhere, Category = "Combat|Hit")
-	UAnimMontage* HitReactMontage_Right;
+	//// 오른쪽 맞음
+	//UPROPERTY(EditAnywhere, Category = "Combat|Hit")
+	//UAnimMontage* HitReactMontage_Right;
 
-	UPROPERTY(EditAnywhere, Category = "Combat|Death")
-	UAnimMontage* DeathMontage;
+	//UPROPERTY(EditAnywhere, Category = "Combat|Death")
+	//UAnimMontage* DeathMontage;
 
 	// 애니메이션을 굳히기 위한 타이머 핸들 및 함수
 	FTimerHandle AnimFreezeTimerHandle;
 	void FreezeAnimation();
 
 protected:
+
+	virtual void InitEnemyData();
+
+	// 에디터에서 엑셀 파일의 몇 번째 줄을 읽을지 선택하는 Handle
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Enemy|Data")
+	FDataTableRowHandle EnemyDataHandle;
+
+	// 게임 시작 시 엑셀에서 뽑아온 원본 데이터를 복사해서 들게 함
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy|Stat")
+	FBaseEnemyStatRow CurrentEnemyStat;
+
 	// 공격 사거리
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Stats")
-	float AttackRange = 110.0f; // 근접 기준
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI Stats")
+	//float AttackRange = 110.0f; // 근접 기준
+
+public:
+	UFUNCTION(BlueprintCallable)
+	FBaseEnemyStatRow GetEnemyStat() {
+		return CurrentEnemyStat;
+	}
 
 public:
 	// 태어날 때의 메쉬 상태를 저장할 변수
 	UPROPERTY()
 	FTransform InitialMeshTransform;
 
-	// 해당 적의 종류
+	//// 해당 적의 종류
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI")
 	EEnemyType EnemyType = EEnemyType::Melee;
 

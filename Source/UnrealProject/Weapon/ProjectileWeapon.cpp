@@ -48,6 +48,17 @@ void AProjectileWeapon::ExecuteFire()
 		if (AActor* SpawnedActor = ProjectilePool->SpawnFromPool(SocketLocation, LaunchDir.Rotation())) {
 			if (AUnrealProjectProjectile* Projectile = Cast<AUnrealProjectProjectile>(SpawnedActor)) {
 				float CurrentSpeed = GetLaunchSpeed();
+
+				Projectile->InitProjectile(
+					CurrentProjectileStat.Damage,
+					CurrentProjectileStat.DamageMethod,
+					CurrentProjectileStat.ExplosionRadius,
+					CurrentProjectileStat.MinimumDamage,
+					CurrentProjectileStat.InnerRadius,
+					CurrentProjectileStat.bExplodeOnTimer,
+					CurrentProjectileStat.ExplosionDelay
+				);
+
 				Projectile->Launch(LaunchDir, CurrentSpeed);
 			}
 		}
