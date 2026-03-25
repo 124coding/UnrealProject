@@ -55,9 +55,59 @@ FVector ASpawnVolume::GetRandomPointInVolume()
 				Params
 			);
 
-			// 충돌이 없으면 이 좌표 당첨;
+			// 충돌이 없으면 플레이어 시야 검사
 			if (!bHit) {
-				return CandidateLoc;
+				APlayerController* PC = GetWorld()->GetFirstPlayerController();
+
+				if (PC && PC->GetPawn()) {
+					FVector CameraLoc;
+					FRotator CameraRot;
+					PC->GetPlayerViewPoint(CameraLoc, CameraRot);
+
+					FHitResult LineHit;
+					FCollisionQueryParams LineParams;
+					LineParams.AddIgnoredActor(this);
+					LineParams.AddIgnoredActor(PC->GetPawn()); // 플레이어는 무시
+
+					// 카메라 위치에서 스폰 지점으로 RayCast
+					bool bHitWall = GetWorld()->LineTraceSingleByChannel(
+						LineHit,
+						CameraLoc,
+						CandidateLoc,
+						ECC_Visibility,
+						LineParams
+					);
+
+					if (bHitWall) {
+						return CandidateLoc;
+					}
+					else {
+						// 모니터 화면 내에 보이는 위치인지 판별
+						FVector2D ScreenPosition;
+
+						// 스폰 좌표를 모니터 화면 좌표로 변환
+						bool bIsInFrontOfCamera = PC->ProjectWorldLocationToScreen(CandidateLoc, ScreenPosition);
+
+						if (bIsInFrontOfCamera) {
+							int32 ViewportSizeX, ViewportSizeY;
+							PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
+
+							// 여유 공간을 줘서 화면 밖 100픽셀 밖에서 스폰 보정
+							float Margin = 100.f;
+
+							bool bIsOnScreen = (ScreenPosition.X >= -Margin && ScreenPosition.X <= ViewportSizeX + Margin) &&
+											   (ScreenPosition.Y >= -Margin && ScreenPosition.Y <= ViewportSizeY + Margin);
+
+							if (bIsOnScreen) continue;
+							else return CandidateLoc;
+						}
+					}
+				}
+				else
+				{
+					// 플레이어를 못 찾았다면 그냥 스폰
+					return CandidateLoc;
+				}
 			}
 		}
 	}

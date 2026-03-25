@@ -239,12 +239,12 @@ void UCombatComponent::EquipWeaponBySlot(EWeaponSlot SlotToEquip)
 			OnReserveAmmoChanged.Broadcast(AvailableAmmo);
 		}
 
-		if (OnCurrentWeaponChanged.IsBound()) {
-			OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
-		}
-
 		RangedWeapon->OnWeaponReloadFinished.RemoveDynamic(this, &UCombatComponent::HandleWeaponReloadFinished);
 		RangedWeapon->OnWeaponReloadFinished.AddDynamic(this, &UCombatComponent::HandleWeaponReloadFinished);
+	}
+
+	if (OnCurrentWeaponChanged.IsBound()) {
+		OnCurrentWeaponChanged.Broadcast(CurrentWeapon);
 	}
 
 	AttachWeaponToHand(CurrentWeapon);

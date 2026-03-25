@@ -45,24 +45,32 @@ void UDroneComponent::BeginPlay()
 	if (GI) LoadDataFromGI(GI);
 
 	// 런타임에 레이더 생성 및 플레이어 부착
-	DetectionSphere = NewObject<USphereComponent>(GetOwner(), TEXT("DroneAttackRadar"));
-	if (DetectionSphere) {
-		DetectionSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+	//DetectionSphere = NewObject<USphereComponent>(GetOwner(), TEXT("DroneAttackRadar"));
+	//if (DetectionSphere) {
+	//	DetectionSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 
-		// 레이더 반경 설정
-		DetectionSphere->SetSphereRadius(CurrentStats.AttackRange);
-		
-		DetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		DetectionSphere->SetCollisionObjectType(ECC_WorldDynamic);
-		DetectionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-		DetectionSphere->SetCollisionResponseToChannel(ECC_Enemy, ECR_Overlap);
+	//	// 레이더 반경 설정
+	//	DetectionSphere->SetSphereRadius(CurrentStats.AttackRange);
+	//	
+	//	DetectionSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	//	DetectionSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
+	//	DetectionSphere->SetCollisionResponseToChannel(ECC_Enemy, ECR_Overlap);
 
-		// 델리게이트 연결
-		DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &UDroneComponent::OnRadarBeginOverlap);
-		DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &UDroneComponent::OnRadarEndOverlap);
+	//	// 델리게이트 연결
+	//	DetectionSphere->OnComponentBeginOverlap.AddDynamic(this, &UDroneComponent::OnRadarBeginOverlap);
+	//	DetectionSphere->OnComponentEndOverlap.AddDynamic(this, &UDroneComponent::OnRadarEndOverlap);
 
-		DetectionSphere->RegisterComponent();
-	}
+	//	DetectionSphere->RegisterComponent();
+	//}
+
+	// 0.1초마다 주위 적을 찾는 걸로 수정
+	GetWorld()->GetTimerManager().SetTimer(
+		RadarScanTimerHandle,
+		this,
+		&UDroneComponent::PerformRadarScan,
+		0.1f,
+		true
+	);
 
 	// 런타임에 드론 외형 생성 및 부착
 	DroneMesh = NewObject<UStaticMeshComponent>(GetOwner(), TEXT("DroneMesh"));
@@ -404,12 +412,59 @@ void UDroneComponent::OnReviveCooldownFinished()
 	bCanUseRevive = true;
 }
 
+void UDroneComponent::PerformRadarScan()
+{
+	// 드론 현재 위치와 스캔 반경
+	FVector PlayerLocation = GetOwner()->GetActorLocation();
+	float RadarRadius = CurrentStats.AttackRange;
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Enemy);
+
+	FCollisionShape CollisionShape = FCollisionShape::MakeSphere(RadarRadius);
+
+	bool bHit = GetWorld()->OverlapMultiByObjectType(
+		OverlapResults,
+		PlayerLocation,
+		FQuat::Identity,
+		ObjectQueryParams,
+		CollisionShape
+	);
+
+	// 임시 명단
+	TArray<AActor*> NewlyDetectedEnemies;
+
+	if (bHit) {
+		for (const FOverlapResult& Result : OverlapResults) {
+			AActor* HitActor = Result.GetActor();
+			if (HitActor && HitActor != GetOwner()) {
+				NewlyDetectedEnemies.AddUnique(HitActor);
+			}
+		}
+	}
+
+	for (AActor* OldEnemy : EnemiesInRange) {
+		if (!NewlyDetectedEnemies.Contains(OldEnemy)) {
+			OnRadarEndOverlap(nullptr, OldEnemy, nullptr, 0);
+		}
+	}
+
+	for (AActor* NewEnemy : NewlyDetectedEnemies) {
+		if (!EnemiesInRange.Contains(NewEnemy)) {
+			OnRadarBeginOverlap(nullptr, NewEnemy, nullptr, 0, false, FHitResult());
+		}
+	}
+
+	// 과거 명단을 현재로 교체
+	EnemiesInRange = NewlyDetectedEnemies;
+}
+
 void UDroneComponent::OnRadarBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// 적이 들어오면 배열에 추가 (AddUnique로 중복 방지)
 	if (OtherActor && OtherActor != GetOwner())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("EnemyOverlap"));
 		EnemiesInRange.AddUnique(OtherActor);
 	}
 }
@@ -419,7 +474,6 @@ void UDroneComponent::OnRadarEndOverlap(UPrimitiveComponent* OverlappedComponent
 	// 적이 나가면 배열에서 제거
 	if (OtherActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("EnemyOut"));
 		EnemiesInRange.Remove(OtherActor);
 	}
 }

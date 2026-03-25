@@ -128,13 +128,17 @@ protected:
 	void OnReviveCooldownFinished();
 
 protected:
-	// 드론의 레이더 역할을 할 구체 컴포넌트
-	UPROPERTY(VisibleAnywhere, Category = "Drone | Radar")
-	USphereComponent* DetectionSphere;
+	//// 드론의 레이더 역할을 할 구체 컴포넌트
+	//UPROPERTY(VisibleAnywhere, Category = "Drone | Radar")
+	//USphereComponent* DetectionSphere;
+
+	FTimerHandle RadarScanTimerHandle;
 
 	// 현재 레이더 반경 안에 있는 적들을 캐싱(기억)할 배열
 	UPROPERTY()
 	TArray<AActor*> EnemiesInRange;
+
+	void PerformRadarScan();
 
 	// 적이 들어오고 나갈 때 발동할 이벤트 함수
 	UFUNCTION()
