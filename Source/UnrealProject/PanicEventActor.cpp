@@ -4,12 +4,22 @@
 #include "PanicEventActor.h"
 #include "DirectorDataSubsystem.h"
 #include "UnrealProjectGameMode.h"
+#include "UnrealProject.h"
+#include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 APanicEventActor::APanicEventActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
-	PrimaryActorTick.bCanEverTick = false;
+	OverlapVolume = CreateDefaultSubobject<UBoxComponent>(TEXT("OverlapVolume"));
+	RootComponent = OverlapVolume;
+
+	OverlapVolume->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	OverlapVolume->SetCollisionObjectType(ECC_WorldStatic);
+	OverlapVolume->SetCollisionResponseToAllChannels(ECR_Ignore);
+	OverlapVolume->SetCollisionResponseToChannel(ECC_Player, ECR_Overlap);
+
+	OverlapVolume->OnComponentBeginOverlap.AddDynamic(this, &APanicEventActor::OnPanicOverlap);
 
 }
 
@@ -32,6 +42,16 @@ void APanicEventActor::GetHit_Implementation(const FVector& ImpactPoint)
 	if (!bHitTriggered) return;
 
 	ExecutePanicEvent();
+}
+
+void APanicEventActor::OnPanicOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (!bOverlapTriggered) return;
+
+	if (OtherActor == UGameplayStatics::GetPlayerPawn(this, 0))
+	{
+		ExecutePanicEvent();
+	}
 }
 
 void APanicEventActor::ExecutePanicEvent()

@@ -444,14 +444,18 @@ void UDroneComponent::PerformRadarScan()
 		}
 	}
 
-	for (AActor* OldEnemy : EnemiesInRange) {
-		if (!NewlyDetectedEnemies.Contains(OldEnemy)) {
+	for (AActor* OldEnemy : EnemiesInRange)
+	{
+		if (!NewlyDetectedEnemies.Contains(OldEnemy))
+		{
 			OnRadarEndOverlap(nullptr, OldEnemy, nullptr, 0);
 		}
 	}
 
-	for (AActor* NewEnemy : NewlyDetectedEnemies) {
-		if (!EnemiesInRange.Contains(NewEnemy)) {
+	for (AActor* NewEnemy : NewlyDetectedEnemies)
+	{
+		if (!EnemiesInRange.Contains(NewEnemy))
+		{
 			OnRadarBeginOverlap(nullptr, NewEnemy, nullptr, 0, false, FHitResult());
 		}
 	}
@@ -462,20 +466,12 @@ void UDroneComponent::PerformRadarScan()
 
 void UDroneComponent::OnRadarBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// 적이 들어오면 배열에 추가 (AddUnique로 중복 방지)
-	if (OtherActor && OtherActor != GetOwner())
-	{
-		EnemiesInRange.AddUnique(OtherActor);
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Target Detect: %s"), *OtherActor->GetName());
 }
 
 void UDroneComponent::OnRadarEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	// 적이 나가면 배열에서 제거
-	if (OtherActor)
-	{
-		EnemiesInRange.Remove(OtherActor);
-	}
+	UE_LOG(LogTemp, Warning, TEXT("Target Miss: % s"), *OtherActor->GetName());
 }
 
 void UDroneComponent::FindBestTarget()

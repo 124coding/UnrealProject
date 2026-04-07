@@ -19,6 +19,10 @@ struct FEnemySpawnInfo
 	// 등장 확률 (가중치)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Spawn", meta = (ClampMin = "0.0"))
 	float SpawnWeight = 1.0f;
+
+	// 몬스터 스폰 시 지불 비용
+	UPROPERTY(EditAnywhere)
+	int32 SpawnCost = 1;
 };
 
 UCLASS(minimalapi)
@@ -54,6 +58,17 @@ protected:
 	// 맵에 있는 모든 볼륨을 저장할 배열
 	UPROPERTY()
 	TArray<class ASpawnVolume*> AllSpawnVolumes;
+
+	// 디렉터의 현재 보유 잔팅(토큰)
+	UPROPERTY(VisibleAnywhere, Category = "Director")
+	int32 CurrentDirectorTokens = 0;
+
+	// 1초당 디렉터가 벌어들이는 토큰 양 (시간이 지날수록 웨이브가 거세짐)
+	UPROPERTY(EditDefaultsOnly, Category = "Director")
+	int32 TokenGenerationRate = 3;
+
+	// 토큰 기반 스폰 함수 선언
+	void SpendTokensToSpawn(int32 MaxTokensToSpend, const TArray<FEnemySpawnInfo>& SpawnList, AActor* TargetActor);
 
 protected:
 
@@ -93,6 +108,12 @@ private:
 	TSubclassOf<AActor> GetRandomEnemyClass(const TArray<FEnemySpawnInfo>& SpawnList);
 
 public:
+	// 안전지대이기에 시간이 흐르지 않게
+	bool bIsDirectorPaused = false;
+	
+	// Peak에 들어가도 되는지 확인
+	bool bCanEnterPeak = true;
+
 	// 현재 페이즈
 	EDirectorPhase CurrentPhase = EDirectorPhase::Relax;
 
@@ -102,6 +123,8 @@ public:
 
 	// 디렉터 루프에서 호출할 Getter 함수
 	int32 GetAliveEnemyCount() const;
+
+	int32 GetCurrentTokens() const;
 
 	AActor* SpawnProjectileFromPool(TSubclassOf<AActor> ProjectileClass, FVector Location, FRotator Rotation);
 

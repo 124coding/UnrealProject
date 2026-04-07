@@ -51,5 +51,10 @@ void UDirectorDebugWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 				Text_AliveEnemies->SetText(FText::FromString(EnemyString));
 			}
 		}
+
+		if (Text_CurrentTokens) {
+			FString TokensString = FString::Printf(TEXT("Current Tokens: %d"), GM->GetCurrentTokens());
+			Text_CurrentTokens->SetText(FText::FromString(TokensString));
+		}
 	}
 }

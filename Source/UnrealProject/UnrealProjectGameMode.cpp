@@ -150,6 +150,47 @@ void AUnrealProjectGameMode::RespawnPlayer(AController* Controller)
 	}
 }
 
+void AUnrealProjectGameMode::SpendTokensToSpawn(int32 MaxTokensToSpend, const TArray<FEnemySpawnInfo>& SpawnList, AActor* TargetActor)
+{
+	int32 TokensLeft = MaxTokensToSpend;
+	int32 Failsafe = 50; // 무한 루프 방지용 (최대 50번만 구매 시도)
+
+	while (TokensLeft > 0 && Failsafe > 0) {
+		Failsafe--;
+
+		// 살 수 있는 몬스터만 필터링
+		TArray<FEnemySpawnInfo> AffordableEnemies;
+		for (const FEnemySpawnInfo& Info : SpawnList) {
+			if (Info.SpawnCost <= TokensLeft) {
+				AffordableEnemies.Add(Info);
+			}
+		}
+
+		// 살 수 있는 몬스터가 없다면 종료
+		if (AffordableEnemies.Num() == 0) break;
+
+		TSubclassOf<AActor> SelectedClass = GetRandomEnemyClass(AffordableEnemies);
+
+		if (SelectedClass) {
+			
+			// 방금 뽑은 클래스의 비용
+			int32 CostToDeduct = 0;
+			for (const FEnemySpawnInfo& Info : AffordableEnemies) {
+				if (Info.EnemyClass == SelectedClass) {
+					CostToDeduct = Info.SpawnCost;
+					break;
+				}
+			}
+
+			// 비용 차감
+			TokensLeft -= CostToDeduct;
+			CurrentDirectorTokens -= CostToDeduct;
+
+			SpawnEnemyInGroup(CurrentActiveGroupID, 1, SelectedClass, TargetActor);
+		}
+	}
+}
+
 void AUnrealProjectGameMode::SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnCount, TSubclassOf<AActor> EnemyClassToSpawn, AActor* AttackTarget)
 {
 	// 해당 ID를 가진 볼륨들만 임시로 모으기
@@ -183,6 +224,8 @@ void AUnrealProjectGameMode::SpawnEnemyInGroup(int32 TargetGroupID, int32 SpawnC
 
 void AUnrealProjectGameMode::ChangePhase(EDirectorPhase NewPhase)
 {
+	if (NewPhase == EDirectorPhase::Peak && !bCanEnterPeak) return;
+
 	CurrentPhase = NewPhase;
 	TimeInCurrentPhase = 0.0f; // 페이즈가 바뀔 때마다 머문 시간 초기화
 	SpawnCooldown = 0.0f;      // 스폰 쿨타임도 초기화
@@ -190,6 +233,9 @@ void AUnrealProjectGameMode::ChangePhase(EDirectorPhase NewPhase)
 
 void AUnrealProjectGameMode::DirectorUpdateLoop()
 {
+	// 세이프존이라면 디렉터가 일하지 않게
+	if (bIsDirectorPaused) return;
+
 	UDirectorDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UDirectorDataSubsystem>();
 	if (!DataSubsystem) return;
 
@@ -200,6 +246,17 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 
 	// 타겟 지정용 플레이어
 	AActor* PlayerActor = UGameplayStatics::GetPlayerPawn(this, 0);
+
+	// 매 틱마다 자금을 모으기 위함
+	CurrentDirectorTokens += (TokenGenerationRate * DirectorInterval);
+
+
+	/*if (CurrentPhase == EDirectorPhase::Peak && CurrentStress >= 0.95f)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Player Warning! Wave Change"));
+		ChangePhase(EDirectorPhase::BuildUp);
+		return;
+	}*/
 
 	switch (CurrentPhase) {
 	case EDirectorPhase::Relax:
@@ -219,52 +276,61 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 		break;
 
 	case EDirectorPhase::BuildUp:
-
+	{
 		// 산발적 스폰
 		SpawnCooldown -= DirectorInterval;
 
 		if (SpawnCooldown <= 0.0f)
 		{
-			if (NormalEnemyList.Num() > 0)
-			{
-				// 랜덤 뽑기 함수
-				TSubclassOf<AActor> SelectedClass = GetRandomEnemyClass(NormalEnemyList);
+			//if (NormalEnemyList.Num() > 0)
+			//{
+			//	// 랜덤 뽑기 함수
+			//	TSubclassOf<AActor> SelectedClass = GetRandomEnemyClass(NormalEnemyList);
 
-				// 뽑힌 랜덤 클래스로 스폰
-				if (SelectedClass) {
-					SpawnEnemyInGroup(CurrentActiveGroupID, FMath::RandRange(2, 3), SelectedClass/*, PlayerActor*/);
-				}
-			}
-			SpawnCooldown = 5.0f;
+			//	// 뽑힌 랜덤 클래스로 스폰
+			//	if (SelectedClass) {
+			//		SpawnEnemyInGroup(CurrentActiveGroupID, FMath::RandRange(2, 3), SelectedClass/*, PlayerActor*/);
+			//	}
+			//}
+
+			// 현재 자금의 10프로만 5초마다 사용해서 플레이어를 공격
+			int32 TokensToSpend = CurrentDirectorTokens * 0.1f;
+			SpendTokensToSpawn(TokensToSpend, NormalEnemyList, PlayerActor);
+			SpawnCooldown = 3.0f;
 		}
 
+		// 플레이어의 스트레스가 1분동안 어느 수준으로 안올라가면 강제 Peak 
+		bool bTooBored = (CurrentStress < 0.3f && TimeInCurrentPhase > 60.0f);
+
 		// 플레이어의 스트레스가 80%를 넘거나, 빌드업 시간이 40초를 넘으면 Peak
-		if (CurrentStress >= 0.8f /*|| TimeInCurrentPhase > 40.0f*/)
+		if (CurrentStress >= 0.7f || bTooBored /*|| TimeInCurrentPhase > 40.0f*/)
 		{
 			ChangePhase(EDirectorPhase::Peak);
 		}
 		break;
+	}
 
 	case EDirectorPhase::Peak:
 
 		SpawnCooldown -= DirectorInterval;
+
+		// 1초마다 적을 우루루 쏟아냅니다.
 		if (SpawnCooldown <= 0.0f)
 		{
-			if (HordeEnemyList.Num() > 0)
+			if (CurrentDirectorTokens > 0)
 			{
-				// 한 번에 지정된 숫자(PeakSpawnCount)만큼 스폰
-				for (int32 i = 0; i < PeakSpawnCount; i++)
-				{
-					// 랜덤 함수 사용
-					TSubclassOf<AActor> SelectedClass = GetRandomEnemyClass(HordeEnemyList);
+				// 남은 돈의 20프로씩만 사용
+				// (최소 10토큰은 보장해서 조금씩 나오는 걸 방지)
+				// (최대 200토큰을 고정)
+				/* 최대, 최소 토큰을 에디터에서 수정가능하도록 할 수도 있음 */
+				int32 TokensToSpendThisTick = FMath::Max(10, FMath::Min(200, FMath::RoundToInt(CurrentDirectorTokens * 0.2f)));
 
-					if (SelectedClass)
-					{
-						SpawnEnemyInGroup(CurrentActiveGroupID, 1, SelectedClass, PlayerActor);
-					}
-				}
+				// 만약 가진 자금이 10보다 적으면 남은 돈 전부 올인
+				if (CurrentDirectorTokens < 10) TokensToSpendThisTick = CurrentDirectorTokens;
+
+				SpendTokensToSpawn(TokensToSpendThisTick, HordeEnemyList, PlayerActor);
 			}
-			SpawnCooldown = 3.0f;
+			SpawnCooldown = 1.0f; // 1초마다 적을 스폰
 		}
 
 		if (TimeInCurrentPhase > PeakDuration)
@@ -317,6 +383,11 @@ TSubclassOf<AActor> AUnrealProjectGameMode::GetRandomEnemyClass(const TArray<FEn
 int32 AUnrealProjectGameMode::GetAliveEnemyCount() const
 {
 	return ActiveEnemyCount;
+}
+
+int32 AUnrealProjectGameMode::GetCurrentTokens() const
+{
+	return CurrentDirectorTokens;
 }
 
 AActor* AUnrealProjectGameMode::SpawnProjectileFromPool(TSubclassOf<AActor> ProjectileClass, FVector Location, FRotator Rotation)

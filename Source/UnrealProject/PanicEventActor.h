@@ -24,6 +24,9 @@ protected:
 	virtual void BeginPlay() override;
 
 protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UBoxComponent* OverlapVolume;
+
 	// 한 번 발동되면 다시 발동되지 않도록 막는 플래그
 	bool bHasBeenTriggered = false;
 
@@ -33,11 +36,17 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Trigger")
 	bool bHitTriggered = false;
 
+	UPROPERTY(EditAnywhere, Category = "Trigger")
+	bool bOverlapTriggered = false;
+
 	// 상호작용(Interact)으로 작동시킬 때
 	virtual void Interact_Implementation(AActor* InstigatorActor) override;
 
 	// 총으로 쏴서(Hit) 작동시킬 때
 	virtual void GetHit_Implementation(const FVector& ImpactPoint) override;
+
+	UFUNCTION()
+	void OnPanicOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	// 블루프린트에서 사운드/이펙트를 재생하기 위한 이벤트
 	/*UFUNCTION(BlueprintImplementableEvent, Category = "Panic Event")

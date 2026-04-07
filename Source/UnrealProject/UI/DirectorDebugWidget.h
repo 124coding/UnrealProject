@@ -27,6 +27,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* Text_AliveEnemies;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* Text_CurrentTokens;
 	
 	
 };
