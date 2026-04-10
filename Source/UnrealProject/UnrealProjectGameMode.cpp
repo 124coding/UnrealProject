@@ -19,6 +19,47 @@ AUnrealProjectGameMode::AUnrealProjectGameMode()
 
 }
 
+void AUnrealProjectGameMode::ResetDirectorState()
+{
+	// FSM 상태 초기화
+	CurrentPhase = EDirectorPhase::Relax;
+	TimeInCurrentPhase = 0.0f;
+	SpawnCooldown = 0.0f;
+
+	// 토큰 및 경제 시스템 초기화
+	CurrentDirectorTokens = 0;
+
+	// 통제 플래그(Flag) 초기화
+	bIsDirectorPaused = false;
+	bCanEnterPeak = true;
+	bCanEnterFadeOut = true;
+
+	// 공간 동기화 초기화
+	CurrentActiveGroupID = 0;
+
+	// 맵에 남아있는 모든 적 퇴근
+	for (const auto& Pair : EnemyPoolMap)
+	{
+		UObjectPoolComponent* EnemyPool = Pair.Value;
+		if (EnemyPool)
+		{
+			EnemyPool->ReturnAllToPool();
+		}
+	}
+
+	// 날아가고 있던 모든 적의 총알 일괄 회수
+	for (const auto& Pair : EnemyProjectilePoolMap)
+	{
+		UObjectPoolComponent* ProjectilePool = Pair.Value;
+		if (ProjectilePool)
+		{
+			ProjectilePool->ReturnAllToPool();
+		}
+	}
+
+	ActiveEnemyCount = 0;
+}
+
 void AUnrealProjectGameMode::BeginPlay()
 {
 	Super::BeginPlay();
@@ -147,6 +188,18 @@ void AUnrealProjectGameMode::RespawnPlayer(AController* Controller)
 
 		UE_LOG(LogTemp, Log, TEXT("RESTART_GAME"));
 		RestartPlayer(Controller);
+	}
+}
+
+void AUnrealProjectGameMode::GameCleared(AController* Controller)
+{
+	if (Controller && Controller->IsLocalPlayerController()) {
+
+		if (AUnrealProjectPlayerController* PlayerController = Cast<AUnrealProjectPlayerController>(Controller)) {
+
+			PlayerController->OnGameCleared();
+		}
+
 	}
 }
 
@@ -333,7 +386,7 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 			SpawnCooldown = 1.0f; // 1초마다 적을 스폰
 		}
 
-		if (TimeInCurrentPhase > PeakDuration)
+		if (TimeInCurrentPhase > PeakDuration && bCanEnterFadeOut)
 		{
 			ChangePhase(EDirectorPhase::FadeOut);
 		}

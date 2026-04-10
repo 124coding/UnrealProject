@@ -33,6 +33,10 @@ class AUnrealProjectGameMode : public AGameModeBase
 public:
 	AUnrealProjectGameMode();
 
+	// 디렉터 상태 초기화
+	UFUNCTION(BlueprintCallable, Category = "Director")
+	void ResetDirectorState();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -45,6 +49,10 @@ protected:
 
 	// 타이머가 끝나면 실행될 부활 함수
 	void RespawnPlayer(AController* Controller);
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void GameCleared(AController* Controller);
 
 protected:
 	// 적 종류(class)를 키(key)로 넣으면, 해당 적을 담고 있는 풀을 주는 맵
@@ -113,6 +121,9 @@ public:
 	
 	// Peak에 들어가도 되는지 확인
 	bool bCanEnterPeak = true;
+
+	// FadeOut에 들어가도 되는지 확인
+	bool bCanEnterFadeOut = true;
 
 	// 현재 페이즈
 	EDirectorPhase CurrentPhase = EDirectorPhase::Relax;

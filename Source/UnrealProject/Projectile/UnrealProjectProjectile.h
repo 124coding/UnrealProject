@@ -105,5 +105,19 @@ public:
 
 	// 초기화 함수
 	void InitProjectile(float tDamage, EDamageMethod tDamageMethod = EDamageMethod::SingleTarget, float tExplosionRadius = 0.f, float tMinimumDamage = 0.f, float tInnerRadius = 0.f, bool tbExplodeOnTimer = false, float tExplosionDelay = 0.f);
+
+protected:
+	bool bIsActive = false;
+
+public:
+	virtual bool IsActiveInPool() const override
+	{
+		return bIsActive;
+	}
+
+	virtual void SetActiveInPool(bool bActive) override
+	{
+		bIsActive = bActive;
+	}
 };
 

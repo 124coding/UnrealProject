@@ -12,6 +12,7 @@ enum class EZoneType : uint8
 	None,
 	SafeZone,    // 시작 지점, 중간 휴식방
 	ChokePoint,  // 좁은 복도 (웨이브 억제)
+	Arena
 };
 
 UCLASS()

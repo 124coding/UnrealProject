@@ -30,6 +30,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "ObjectPool")
 	void ReturnToPool(AActor* ActorToReturn);
 
+	// 모든 액터 풀로 돌려보내기
+	void ReturnAllToPool();
+
 protected:
 	UPROPERTY()
 	TSubclassOf<AActor> PooledClass;

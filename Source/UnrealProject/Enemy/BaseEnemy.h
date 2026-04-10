@@ -159,4 +159,18 @@ protected:
 
 	// 가끔씩 실행할 계산 함수
 	void CalculateSeparation();
+
+protected:
+	bool bIsActive = false;
+
+public:
+	virtual bool IsActiveInPool() const override
+	{
+		return bIsActive;
+	}
+
+	virtual void SetActiveInPool(bool bActive) override
+	{
+		bIsActive = bActive;
+	}
 };

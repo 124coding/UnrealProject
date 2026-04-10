@@ -39,7 +39,12 @@ AActor* UObjectPoolComponent::SpawnFromPool(FVector SpawnLocation, FRotator Spaw
 		PooledActor->SetActorLocationAndRotation(SpawnLocation, SpawnRotation);
 
 		if (PooledActor->Implements<UPoolableInterface>()) {
-			IPoolableInterface::Execute_OnPoolSpawned(PooledActor);
+			IPoolableInterface* PoolableObj = Cast<IPoolableInterface>(PooledActor);
+
+			if (PoolableObj && PoolableObj->IsActiveInPool()) {
+				PoolableObj->SetActiveInPool(false);
+				IPoolableInterface::Execute_OnPoolSpawned(PooledActor);
+			}
 		}
 		else {
 			// 인터페이스 없으면 수동 설정
@@ -57,7 +62,12 @@ void UObjectPoolComponent::ReturnToPool(AActor* ActorToReturn)
 	if (!ActorToReturn) return;
 
 	if (ActorToReturn->Implements<UPoolableInterface>()) {
-		IPoolableInterface::Execute_OnPoolReturned(ActorToReturn);
+		IPoolableInterface* PoolableObj = Cast<IPoolableInterface>(ActorToReturn);
+
+		if (PoolableObj && PoolableObj->IsActiveInPool()) {
+			PoolableObj->SetActiveInPool(true);
+			IPoolableInterface::Execute_OnPoolReturned(ActorToReturn);
+		}
 	}
 	else {
 		ActorToReturn->SetActorHiddenInGame(true);
@@ -66,6 +76,19 @@ void UObjectPoolComponent::ReturnToPool(AActor* ActorToReturn)
 	}
 
 	PoolQueue.Add(ActorToReturn);
+}
+
+void UObjectPoolComponent::ReturnAllToPool()
+{
+	for (AActor* PooledActor : PoolQueue)
+	{
+		IPoolableInterface* PoolableObj = Cast<IPoolableInterface>(PooledActor);
+
+		if (PoolableObj && PoolableObj->IsActiveInPool())
+		{
+			ReturnToPool(PooledActor);
+		}
+	}
 }
 
 AActor* UObjectPoolComponent::CreateNewObject() {

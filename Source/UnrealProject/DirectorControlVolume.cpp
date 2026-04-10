@@ -46,6 +46,12 @@ void ADirectorControlVolume::OnZoneEnter(UPrimitiveComponent* OverlappedComponen
 		GM->bCanEnterPeak = false;
 		break;
 	}
+	case EZoneType::Arena:
+	{
+		GM->ChangePhase(EDirectorPhase::Peak);
+		GM->bCanEnterFadeOut = false;
+		break;
+	}
 
 	default:
 		break;
@@ -70,6 +76,11 @@ void ADirectorControlVolume::OnZoneExit(UPrimitiveComponent* OverlappedComponent
 	case EZoneType::ChokePoint:
 	{
 		GM->bCanEnterPeak = true;
+		break;
+	}
+	case EZoneType::Arena:
+	{
+		GM->bCanEnterFadeOut = true;
 		break;
 	}
 

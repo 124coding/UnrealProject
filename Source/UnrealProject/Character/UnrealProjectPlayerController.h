@@ -21,6 +21,8 @@ public:
 
 	// 게임 오버 UI 보여주는 함수
 	void ShowGameOverUI();
+
+	void OnGameCleared();
 	
 protected:
 
@@ -45,9 +47,16 @@ protected:
 	UDirectorDebugWidget* DirectorDebugWidgetInstance;
 
 	// 게임 오버 위젯
-	UPROPERTY(EditDefaultsOnly, Category = "GameOver")
+	UPROPERTY(EditDefaultsOnly, Category = "UI|GameOver")
 	TSubclassOf<UUserWidget> GameOverWidgetClass;
+
+	// 게임 클리어
+	UPROPERTY(EditAnywhere, Category = "UI|GameClear")
+	TSubclassOf<UUserWidget> GameClearWidgetClass;
 
 	UPROPERTY()
 	UUserWidget* GameOverWidget;
+
+	UPROPERTY()
+	UUserWidget* GameClearWidget;
 };

@@ -6,6 +6,7 @@
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
 #include "../UI/DirectorDebugWidget.h"
+#include "Kismet/GameplayStatics.h"
 
 void AUnrealProjectPlayerController::ChangeInputContext(bool bIsDowned)
 {
@@ -40,6 +41,28 @@ void AUnrealProjectPlayerController::ShowGameOverUI()
 			InputMode.SetWidgetToFocus(GameOverWidget->TakeWidget());
 			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
 			SetInputMode(InputMode);
+		}
+	}
+}
+
+void AUnrealProjectPlayerController::OnGameCleared()
+{
+
+	if (GameClearWidgetClass) {
+		GameClearWidget = CreateWidget<UUserWidget>(this, GameClearWidgetClass);
+		if (GameClearWidget) {
+			GameClearWidget->AddToViewport(10);	// Z-Order를 높게 줘서 HUD보다 위에 뜨게
+
+			// 마우스 커서 보이기
+			bShowMouseCursor = true;
+
+			// 입력 모드를 UI전용으로 변경
+			FInputModeUIOnly InputMode;
+			InputMode.SetWidgetToFocus(GameClearWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+			
+			UGameplayStatics::SetGamePaused(GetWorld(), true);
 		}
 	}
 }

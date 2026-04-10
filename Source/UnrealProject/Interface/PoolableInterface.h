@@ -23,6 +23,12 @@ class UNREALPROJECT_API IPoolableInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
+	// 현재 풀에서 활성화되어 사용 중인지 확인하는 함수
+	virtual bool IsActiveInPool() const = 0;
+
+	// 풀 활성화/비활성화 상태를 세팅하는 함수
+	virtual void SetActiveInPool(bool bActive) = 0;
+
 	// 풀에서 꺼내질 때 (SetActive) - 변수 초기화, 물리 켜기
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "ObjectPool")
 	void OnPoolSpawned();
