@@ -12,6 +12,7 @@
 #include "../SurvivalGameInstance.h"
 #include "NiagaraFunctionLibrary.h"
 #include "AttributeComponent.h"
+#include "../Character/UnrealProjectCharacter.h"
 
 // Sets default values for this component's properties
 UDroneComponent::UDroneComponent()
@@ -261,11 +262,16 @@ void UDroneComponent::OnAttackTick()
 
 void UDroneComponent::OnHealTick()
 {
-	UE_LOG(LogTemp, Log, TEXT("Drone Heal Owner"));
 
 	if (UAttributeComponent* AttributeComp = GetOwner()->FindComponentByClass<UAttributeComponent>()) {
-		AttributeComp->Heal(CurrentStats.HealAmount);
+		if (AUnrealProjectCharacter* Owner = Cast<AUnrealProjectCharacter>(GetOwner())) {
+			if (Owner->IsDowned() || Owner->IsDead()) return;
+
+			AttributeComp->Heal(CurrentStats.HealAmount);
+		}
 	}
+
+	UE_LOG(LogTemp, Log, TEXT("Drone Heal Owner"));
 }
 
 void UDroneComponent::ActiveDroneSkill()

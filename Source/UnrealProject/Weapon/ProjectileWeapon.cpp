@@ -56,7 +56,8 @@ void AProjectileWeapon::ExecuteFire()
 					CurrentProjectileStat.MinimumDamage,
 					CurrentProjectileStat.InnerRadius,
 					CurrentProjectileStat.bExplodeOnTimer,
-					CurrentProjectileStat.ExplosionDelay
+					CurrentProjectileStat.ExplosionDelay,
+					CurrentProjectileStat.KnockbackPower
 				);
 
 				Projectile->Launch(LaunchDir, CurrentSpeed);

@@ -139,6 +139,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UObjectPoolComponent* OwningPoolComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UVocalComponent* VocalComponent;
+
 	// 타이머핸들 (SetLifeSpan 대신 사용)
 	FTimerHandle ReturnTimerHandle;
 

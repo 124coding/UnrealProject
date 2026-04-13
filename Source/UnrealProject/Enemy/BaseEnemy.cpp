@@ -12,8 +12,11 @@
 #include "BrainComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "../Component/ObjectPoolComponent.h"
+#include "../Component/VocalComponent.h"
 #include "../UnrealProjectGameMode.h"
 #include "../Weapon/BaseWeapon.h"
+#include "../Projectile/UnrealProjectProjectile.h"
+#include "Engine/DamageEvents.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -26,6 +29,8 @@ ABaseEnemy::ABaseEnemy()
 
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABaseEnemy::OnEnemyOverlapBegin);
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ABaseEnemy::OnEnemyOverlapEnd);
+
+	VocalComponent = CreateDefaultSubobject<UVocalComponent>(TEXT("VocalComp"));
 
 	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECR_Ignore);
@@ -105,6 +110,18 @@ void ABaseEnemy::SetCommandTarget(AActor* NewTarget)
 
 		if (AIC->GetBlackboardComponent()->GetValueAsObject(TargetActorKey) != NewTarget) {
 			AIC->GetBlackboardComponent()->SetValueAsObject(TargetActorKey, NewTarget);
+		}
+
+		if (VocalComponent)
+		{
+			if (NewTarget != nullptr)
+			{
+				VocalComponent->SetVocalState(EVocalState::EVS_Sprinting);
+			}
+			else
+			{
+				VocalComponent->SetVocalState(EVocalState::EVS_Idle);
+			}
 		}
 	}
 }
@@ -298,6 +315,10 @@ void ABaseEnemy::GetHit_Implementation(const FVector& ImpactPoint)
 		}
 	}
 
+	if (VocalComponent) {
+		VocalComponent->PlayVocalEvent(EVocalEvent::EVE_Damaged);
+	}
+
 	PlayDirectionalHitReact(ImpactPoint);
 
 	/*UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -326,17 +347,57 @@ float ABaseEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	}
 
 	// 넉백 적용
-	if (ABaseWeapon* Weapon = Cast<ABaseWeapon>(DamageCauser)) {
-		float Force = Weapon->GetKnockbackPower();
-	
-		FVector PushDirection = (this->GetActorLocation() - Weapon->GetOwner()->GetActorLocation()).GetSafeNormal();
+	FVector KnockbackOrigin = FVector::ZeroVector;
+	float KnockbackForce = 0.0f;
+
+	// 폭발식 공격일 경우
+	if (DamageEvent.IsOfType(FRadialDamageEvent::ClassID)) {
+		const FRadialDamageEvent* RadialEvent = (FRadialDamageEvent*)&DamageEvent;
+		KnockbackOrigin = RadialEvent->Origin;
+
+		// 폭발 중심점으로부터 적까지의 거리
+		float Distance = FVector::Dist(this->GetActorLocation(), KnockbackOrigin);
+
+		// 투사체가 넘겨준 폭발 반경 정보
+		float InnerRadius = RadialEvent->Params.InnerRadius;
+		float OuterRadius = RadialEvent->Params.OuterRadius;
+
+		// 거리에 따른 넉백 감소 비율 계산
+		float FalloffMultiplier = 1.f;
+		if (Distance > InnerRadius && OuterRadius > InnerRadius) {
+			FalloffMultiplier = 1.0f - FMath::Clamp((Distance - InnerRadius) / (OuterRadius - InnerRadius), 0.0f, 1.0f);
+		}
+
+		if (AUnrealProjectProjectile* Projectile = Cast<AUnrealProjectProjectile>(DamageCauser))
+		{
+			// 거리에 비례하여 넉백 파워를 줄여줌
+			KnockbackForce = Projectile->GetKnockbackPower() * FalloffMultiplier;
+		}
+	}
+	// 직사 무기일 경우
+	else
+	{
+		if (DamageCauser)
+		{
+			KnockbackOrigin = DamageCauser->GetActorLocation();
+		}
+
+		if (ABaseWeapon* Weapon = Cast<ABaseWeapon>(DamageCauser))
+		{
+			KnockbackForce = Weapon->GetKnockbackPower();
+		}
+	}
+
+	// 최종 넉백 적용 죽은 상태라면 넉백 차단
+	if (KnockbackForce > 0.0f && CurrentState != EEnemyState::EES_Dead)
+	{
+		FVector PushDirection = (this->GetActorLocation() - KnockbackOrigin).GetSafeNormal();
 
 		// 바닥 마찰 무시용 살짝 띄우기
 		PushDirection.Z = 0.5f;
 		PushDirection.Normalize();
 
-		FVector FinalKnockback = PushDirection * Force;
-
+		FVector FinalKnockback = PushDirection * KnockbackForce;
 		this->LaunchCharacter(FinalKnockback, true, true);
 	}
 
@@ -385,6 +446,11 @@ void ABaseEnemy::OnPoolSpawned_Implementation()
 		AttributeComponent->InitializeStats();
 	}
 
+	if (VocalComponent) {
+		VocalComponent->PlayVocalEvent(EVocalEvent::EVE_Spawn);
+		VocalComponent->SetVocalState(EVocalState::EVS_Idle);
+	}
+
 	// AI 재가동
 	AEnemyAIController* AIC = Cast<AEnemyAIController>(GetController());
 	if (AIC)
@@ -431,6 +497,10 @@ void ABaseEnemy::OnPoolReturned_Implementation()
 		GetCharacterMovement()->SetMovementMode(EMovementMode::MOVE_None); // 이동 모드 없음
 	}
 
+	if (VocalComponent) {
+		VocalComponent->SetVocalState(EVocalState::EVS_None);
+	}
+
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	SetActorTickEnabled(false);
@@ -466,6 +536,10 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 	// 래그돌 실행
 	/*GetMesh()->SetCollisionProfileName(TEXT("Ragdoll"));
 	GetMesh()->SetSimulatePhysics(true);*/
+
+	if (VocalComponent) {
+		VocalComponent->PlayVocalEvent(EVocalEvent::EVE_Death);
+	}
 
 	// 사망 애니메이션
 	float DeathAnimDuration = PlayAnimMontage(CurrentEnemyStat.DeathMontage);

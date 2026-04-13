@@ -30,7 +30,7 @@ void AUnrealProjectGameMode::ResetDirectorState()
 	CurrentDirectorTokens = 0;
 
 	// 통제 플래그(Flag) 초기화
-	bIsDirectorPaused = false;
+	bIsInSafeZone = false;
 	bCanEnterPeak = true;
 	bCanEnterFadeOut = true;
 
@@ -286,8 +286,6 @@ void AUnrealProjectGameMode::ChangePhase(EDirectorPhase NewPhase)
 
 void AUnrealProjectGameMode::DirectorUpdateLoop()
 {
-	// 세이프존이라면 디렉터가 일하지 않게
-	if (bIsDirectorPaused) return;
 
 	UDirectorDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UDirectorDataSubsystem>();
 	if (!DataSubsystem) return;
@@ -296,6 +294,11 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 	TimeInCurrentPhase += DirectorInterval;
 
 	float CurrentStress = DataSubsystem->GetNormalizedStress(); // 0.0 ~ 1.0
+
+	if (bIsInSafeZone) {
+		DataSubsystem->DecayStress(DirectorInterval);
+		return;
+	}
 
 	// 타겟 지정용 플레이어
 	AActor* PlayerActor = UGameplayStatics::GetPlayerPawn(this, 0);
@@ -324,6 +327,7 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 
 		if (CurrentStress >= 0.2f)
 		{
+
 			ChangePhase(EDirectorPhase::BuildUp);
 		}
 		break;
@@ -347,7 +351,7 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 			//}
 
 			// 현재 자금의 10프로만 5초마다 사용해서 플레이어를 공격
-			int32 TokensToSpend = CurrentDirectorTokens * 0.1f;
+			int32 TokensToSpend = FMath::Max(3.f, CurrentDirectorTokens * 0.1f);
 			SpendTokensToSpawn(TokensToSpend, NormalEnemyList, PlayerActor);
 			SpawnCooldown = 3.0f;
 		}

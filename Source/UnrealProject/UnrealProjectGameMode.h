@@ -116,8 +116,8 @@ private:
 	TSubclassOf<AActor> GetRandomEnemyClass(const TArray<FEnemySpawnInfo>& SpawnList);
 
 public:
-	// 안전지대이기에 시간이 흐르지 않게
-	bool bIsDirectorPaused = false;
+	// 안전지대이기인지 확인
+	bool bIsInSafeZone = false;
 	
 	// Peak에 들어가도 되는지 확인
 	bool bCanEnterPeak = true;

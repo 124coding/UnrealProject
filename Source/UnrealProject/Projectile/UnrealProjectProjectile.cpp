@@ -3,6 +3,7 @@
 #include "UnrealProjectProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
+#include "Components/AudioComponent.h"
 #include "../Component/ObjectPoolComponent.h"
 #include "../UnrealProject.h"
 #include "Kismet/GameplayStatics.h"
@@ -30,6 +31,10 @@ AUnrealProjectProjectile::AUnrealProjectProjectile()
 	MeshComp->SetGenerateOverlapEvents(false);
 	MeshComp->SetSimulatePhysics(false);
 
+	FlightAudioComp = CreateDefaultSubobject<UAudioComponent>(TEXT("FlightAudioComp"));
+	FlightAudioComp->SetupAttachment(RootComponent);
+
+	FlightAudioComp->bAutoActivate = false;
 
 	// Use a ProjectileMovementComponent to govern this projectile's movement
 	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
@@ -79,6 +84,11 @@ void AUnrealProjectProjectile::DealDamage(const FHitResult& HitResult)
 			GetInstigatorController()
 		);
 
+		if (ExplosionSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ExplosionSound, GetActorLocation());
+		}
+
 		// 안쪽 반경 (100% 데미지 구간) - 빨간색 구체
 		DrawDebugSphere(GetWorld(), Epicenter, InnerRadius, 24, FColor::Red, false, 2.0f, 0, 2.0f);
 
@@ -109,6 +119,11 @@ void AUnrealProjectProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Other
 {
 	if (bExplodeOnTimer) return;
 
+	if (FlightAudioComp && FlightAudioComp->IsPlaying())
+	{
+		FlightAudioComp->Stop();
+	}
+
 	// Only add impulse and destroy projectile if we hit a physics
 	if (OtherActor && OtherActor != this && OtherActor != GetInstigator())
 	{
@@ -134,6 +149,11 @@ void AUnrealProjectProjectile::OnPoolSpawned_Implementation()
 		ProjectileMovement->SetUpdatedComponent(CollisionComp);
 		// ProjectileMovement->ProjectileGravityScale = 1.0f;
 		ProjectileMovement->Activate();
+	}
+
+	if (FlightAudioComp && FlightAudioComp->Sound)
+	{
+		FlightAudioComp->Play();
 	}
 
 	// 수명 타이머
@@ -238,7 +258,7 @@ void AUnrealProjectProjectile::LaunchTowards(FVector StartLoc, AActor* TargetAct
 	Launch(Direction);
 }
 
-void AUnrealProjectProjectile::InitProjectile(float tDamage, EDamageMethod tDamageMethod, float tExplosionRadius, float tMinimumDamage, float tInnerRadius, bool tbExplodeOnTimer, float tExplosionDelay)
+void AUnrealProjectProjectile::InitProjectile(float tDamage, EDamageMethod tDamageMethod, float tExplosionRadius, float tMinimumDamage, float tInnerRadius, bool tbExplodeOnTimer, float tExplosionDelay, float tKnockbackPower)
 {
 	BaseDamage = tDamage;
 	DamageMethod = tDamageMethod;
@@ -247,4 +267,5 @@ void AUnrealProjectProjectile::InitProjectile(float tDamage, EDamageMethod tDama
 	InnerRadius = tInnerRadius;
 	bExplodeOnTimer = tbExplodeOnTimer;
 	ExplosionDelay = tExplosionDelay;
+	KnockbackPower = tKnockbackPower;
 }

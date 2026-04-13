@@ -11,6 +11,8 @@
 #include "../Component/CombatComponent.h"
 #include "../Component/DroneComponent.h"
 #include "../Component/AttributeComponent.h"
+#include "../Component/FootStepComponent.h"
+#include "../Component/VocalComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
@@ -54,6 +56,8 @@ AUnrealProjectCharacter::AUnrealProjectCharacter()
 	CombatComponent = CreateDefaultSubobject<UCombatComponent>(TEXT("CombatComp"));
 	AttributeComponent = CreateDefaultSubobject<UAttributeComponent>(TEXT("AttributeComp"));
 	DroneComponent = CreateDefaultSubobject<UDroneComponent>(TEXT("DroneComp"));
+	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComp"));
+	VocalComponent = CreateDefaultSubobject<UVocalComponent>(TEXT("VocalComp"));
 
 	if (GetCharacterMovement()) {
 		NormalWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
@@ -291,6 +295,10 @@ void AUnrealProjectCharacter::Death(AActor* KillerActor)
 	UE_LOG(LogTemp, Warning, TEXT("Player Death"));
 	SetPlayerState(EPlayerState::EPS_Dead);
 
+	if (VocalComponent) {
+		VocalComponent->PlayVocalEvent(EVocalEvent::EVE_Death);
+	}
+
 	if (FirstPersonCameraComponent)
 	{
 		FirstPersonCameraComponent->AttachToComponent(
@@ -341,6 +349,39 @@ void AUnrealProjectCharacter::SetPlayerState(EPlayerState NewState)
 		//GetMesh1P()->SetSimulatePhysics(true);
 		//GetMesh1P()->SetCollisionProfileName(TEXT("Ragdoll"));
 		break;
+	}
+}
+
+void AUnrealProjectCharacter::UpdateVocalState()
+{
+	if (!VocalComponent) return;
+
+	if (CurrentState == EPlayerState::EPS_Dead) return;
+
+	if (CurrentState == EPlayerState::EPS_Downed) {
+		// 기절 시 무조건 Downed 소리를 출력
+		VocalComponent->SetVocalState(EVocalState::EVS_Downed);
+		return;
+	}
+
+	if (GetCharacterMovement()->IsFalling()) {
+		VocalComponent->SetVocalState(EVocalState::EVS_Idle);
+		return;
+	}
+
+	float CurrentSpeed = GetVelocity().Size2D();
+
+	if (CurrentSpeed < 10.f)
+	{
+		VocalComponent->SetVocalState(EVocalState::EVS_Idle);
+	}
+	else if (bIsSprinting)
+	{
+		VocalComponent->SetVocalState(EVocalState::EVS_Sprinting);
+	}
+	else
+	{
+		VocalComponent->SetVocalState(EVocalState::EVS_Jogging);
 	}
 }
 
@@ -406,10 +447,14 @@ void AUnrealProjectCharacter::Landed(const FHitResult& Hit)
 	// 떨어질때 속도 체크
 	float FallingSpeed = -GetVelocity().Z;
 
-	float VolumeMultiplier = FMath::Clamp(FallingSpeed / 1000.0f, 0.2f, 1.0f);
+
+	if (FootstepComponent)
+	{
+		FootstepComponent->PlayLandedSound(Hit, FallingSpeed);
+	}
 
 	// 떨어진 높이만큼 소리 크게
-	UGameplayStatics::PlaySoundAtLocation(this, LandSound, GetActorLocation(), VolumeMultiplier);
+	float VolumeMultiplier = FMath::Clamp(FallingSpeed / 1000.0f, 0.2f, 1.0f);
 	MakeNoise(VolumeMultiplier, this, GetActorLocation());
 }
 

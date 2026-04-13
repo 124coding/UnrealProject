@@ -17,6 +17,8 @@ class UCharacterMovementComponent;
 class UCombatComponent;
 class UAttributeComponent;
 class UDroneComponent;
+class UFootstepComponent;
+class UVocalComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
@@ -201,6 +203,8 @@ private:
 	// 중간 보간을 위한 목표값
 	float TargetSpeed;
 
+	void UpdateVocalState();
+
 protected:
 	// 현재 상태
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
@@ -218,10 +222,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Movement: Walking", meta = (ClampMin = "0", UIMin = "0", ForceUnits = "cm/s"))
 	float SprintSpeed;
 
-	// 착지 사운드
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character Movement: Landed")
-	USoundBase* LandSound;
-
 	// 무기를 줍거나 버리는 등의 무기 상호작용 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UCombatComponent* CombatComponent;
@@ -229,9 +229,17 @@ public:
 	// 스탯 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UAttributeComponent* AttributeComponent;
-
+	
+	// 드론 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UDroneComponent* DroneComponent;
+
+	// 발소리 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UFootstepComponent* FootstepComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	UVocalComponent* VocalComponent;
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnDeathPlayer OnDeath;

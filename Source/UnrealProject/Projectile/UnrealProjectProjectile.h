@@ -46,16 +46,20 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Combat")
 	EDamageMethod DamageMethod = EDamageMethod::SingleTarget;
 
+	// 넉백 파워
+	UPROPERTY(VisibleAnywhere, Category = "Combat")
+	float KnockbackPower = 500.f;
+
 	// 폭발 반경
 	UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
-	float ExplosionRadius = 200.0f;
+	float ExplosionRadius = 200.f;
 
 	// 광역 최소 데미지
-	UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
-	float MinimumDamage = 10.0f;
+	UPROPERTY(VisibleAnywhere, Category = "Combat|Damage", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	float MinimumDamage = 10.f;
 
 	UPROPERTY(VisibleAnywhere, Category = "Combat|Damage", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
-	float InnerRadius = 100.0f; // 100% 데미지 반경
+	float InnerRadius = 100.f; // 100% 데미지 반경
 
 	// 폭발 조건 설정
 	UPROPERTY(VisibleAnywhere, Category = "Combat|Explosion")
@@ -63,7 +67,7 @@ protected:
 
 	// 폭발 대기 시간 (수류탄 타이머)
 	UPROPERTY(VisibleAnywhere, Category = "Combat|Explosion", meta = (EditCondition = "bExplodeOnTimer"))
-	float ExplosionDelay = 3.0f;
+	float ExplosionDelay = 3.f;
 
 	// 폭발 타이머 핸들
 	FTimerHandle ExplosionTimerHandle;
@@ -73,6 +77,14 @@ protected:
 
 	// 타이머가 다 되면 강제 폭발 함수
 	void TimeOutExplode();
+
+	// 투사체를 따라다니며 날아가는 소리를 낼 오디오 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Audio")
+	class UAudioComponent* FlightAudioComp;
+
+	// 단발성 폭발음
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Audio")
+	class USoundBase* ExplosionSound;
 
 public:
 
@@ -104,7 +116,9 @@ public:
 	virtual void LaunchTowards(FVector StartLoc, AActor* TargetActor);
 
 	// 초기화 함수
-	void InitProjectile(float tDamage, EDamageMethod tDamageMethod = EDamageMethod::SingleTarget, float tExplosionRadius = 0.f, float tMinimumDamage = 0.f, float tInnerRadius = 0.f, bool tbExplodeOnTimer = false, float tExplosionDelay = 0.f);
+	void InitProjectile(float tDamage, EDamageMethod tDamageMethod = EDamageMethod::SingleTarget, float tExplosionRadius = 0.f, float tMinimumDamage = 0.f, float tInnerRadius = 0.f, bool tbExplodeOnTimer = false, float tExplosionDelay = 0.f, float tKockbackPower = 0.f);
+
+	float GetKnockbackPower() const { return KnockbackPower; }
 
 protected:
 	bool bIsActive = false;

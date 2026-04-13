@@ -39,6 +39,7 @@ void AHitScanWeapon::ExecuteFire()
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this); // 무기는 무시
 	QueryParams.AddIgnoredActor(OwnerPawn); // 쏘는 사람 무시
+	QueryParams.bReturnPhysicalMaterial = true; // 재질가져오기
 
 	bool bHit = GetWorld()->LineTraceSingleByChannel(
 		HitResult,
@@ -78,16 +79,55 @@ void AHitScanWeapon::ExecuteFire()
 			}
 		}
 
-		if (CurrentHitScanStat.ImpactParticles) {
+		// 피격 이펙트
+		EPhysicalSurface SurfaceType = SurfaceType_Default;
+
+		if (HitResult.PhysMaterial.IsValid()) // 재질 정보가 있는지 안전 검사
+		{
+			SurfaceType = UPhysicalMaterial::DetermineSurfaceType(HitResult.PhysMaterial.Get());
+		}
+
+		UParticleSystem* SelectedParticle = nullptr;
+
+		if (CurrentHitScanStat.DefaultImpactParticle) {
+			SelectedParticle = CurrentHitScanStat.DefaultImpactParticle; // 일단 기본 파티클
+		}
+
+		// 맞은 재질이 TMap에 있다면 교체
+		if (CurrentHitScanStat.ImpactParticleMap.Contains(SurfaceType))
+		{
+			SelectedParticle = CurrentHitScanStat.ImpactParticleMap[SurfaceType];
+		}
+
+		if (SelectedParticle) {
 			UGameplayStatics::SpawnEmitterAtLocation(
 				GetWorld(),
-				CurrentHitScanStat.ImpactParticles,
+				SelectedParticle,
 				HitResult.ImpactPoint,
 				HitResult.ImpactNormal.Rotation() // 벽의 각도에 맞춰 이펙트 회전
 			);
 		}
 
-		if (CurrentHitScanStat.ImpactSound) UGameplayStatics::PlaySoundAtLocation(this, CurrentHitScanStat.ImpactSound, HitResult.Location);
+		// 피격 사운드
+
+		USoundBase* SelectedSound = nullptr; 
+		if (CurrentHitScanStat.DefaultImpactSound) {
+			SelectedSound = CurrentHitScanStat.DefaultImpactSound; // 일단 기본 사운드
+		}
+
+		// 맞은 재질이 Tmap에 있다면 교체
+		if (CurrentHitScanStat.ImpactSoundMap.Contains(SurfaceType))
+		{
+			SelectedSound = CurrentHitScanStat.ImpactSoundMap[SurfaceType];
+		}
+
+		if (SelectedSound) {
+			UGameplayStatics::PlaySoundAtLocation(
+				this, 
+				SelectedSound, 
+				HitResult.ImpactPoint
+			);
+		}
 
 		DrawDebugLine(
 			GetWorld(),

@@ -41,8 +41,8 @@ AActor* UObjectPoolComponent::SpawnFromPool(FVector SpawnLocation, FRotator Spaw
 		if (PooledActor->Implements<UPoolableInterface>()) {
 			IPoolableInterface* PoolableObj = Cast<IPoolableInterface>(PooledActor);
 
-			if (PoolableObj && PoolableObj->IsActiveInPool()) {
-				PoolableObj->SetActiveInPool(false);
+			if (PoolableObj && !PoolableObj->IsActiveInPool()) {
+				PoolableObj->SetActiveInPool(true);
 				IPoolableInterface::Execute_OnPoolSpawned(PooledActor);
 			}
 		}
@@ -65,7 +65,7 @@ void UObjectPoolComponent::ReturnToPool(AActor* ActorToReturn)
 		IPoolableInterface* PoolableObj = Cast<IPoolableInterface>(ActorToReturn);
 
 		if (PoolableObj && PoolableObj->IsActiveInPool()) {
-			PoolableObj->SetActiveInPool(true);
+			PoolableObj->SetActiveInPool(false);
 			IPoolableInterface::Execute_OnPoolReturned(ActorToReturn);
 		}
 	}

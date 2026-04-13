@@ -35,7 +35,7 @@ void ADirectorControlVolume::OnZoneEnter(UPrimitiveComponent* OverlappedComponen
 	case EZoneType::SafeZone:
 	{
 		GM->ChangePhase(EDirectorPhase::Relax);
-		GM->bIsDirectorPaused = true;
+		GM->bIsInSafeZone = true;
 
 		UDirectorDataSubsystem* DataSubsystem = GetWorld()->GetSubsystem<UDirectorDataSubsystem>();
 		DataSubsystem->CurrentPlayerStress = 0.f;
@@ -70,7 +70,7 @@ void ADirectorControlVolume::OnZoneExit(UPrimitiveComponent* OverlappedComponent
 	switch (ZoneType) {
 	case EZoneType::SafeZone:
 	{
-		GM->bIsDirectorPaused = false;
+		GM->bIsInSafeZone = false;
 		break;
 	}
 	case EZoneType::ChokePoint:
