@@ -6,6 +6,7 @@
 #include "Engine/LocalPlayer.h"
 #include "Blueprint/UserWidget.h"
 #include "../UI/DirectorDebugWidget.h"
+#include "../UI/InteractionMgr.h"
 #include "Kismet/GameplayStatics.h"
 
 void AUnrealProjectPlayerController::ChangeInputContext(bool bIsDowned)
@@ -23,6 +24,27 @@ void AUnrealProjectPlayerController::ChangeInputContext(bool bIsDowned)
 	}
 	else {
 		if (DefaultMappingContext) Subsystem->AddMappingContext(DefaultMappingContext, 0);
+	}
+}
+
+void AUnrealProjectPlayerController::UpdateAndShowPrompt(const FText& ActionText, const FText& KeyText)
+{
+	if (InteractionMgrWidgetInstance) {
+		InteractionMgrWidgetInstance->UpdateAndShowPrompt(ActionText, KeyText);
+	}
+}
+
+void AUnrealProjectPlayerController::HidePrompt()
+{
+	if (InteractionMgrWidgetInstance) {
+		InteractionMgrWidgetInstance->HidePrompt();
+	}
+}
+
+void AUnrealProjectPlayerController::ShowFeedback(const FText& Message, EFeedbackType Type)
+{
+	if (InteractionMgrWidgetInstance) {
+		InteractionMgrWidgetInstance->ShowFeedback(Message, Type);
 	}
 }
 
@@ -84,6 +106,18 @@ void AUnrealProjectPlayerController::BeginPlay()
 		if (DirectorDebugWidgetInstance)
 		{
 			DirectorDebugWidgetInstance->AddToViewport();
+		}
+	}
+
+	if (InteractionMgrWidgetClass)
+	{
+		InteractionMgrWidgetInstance = CreateWidget<UInteractionMgr>(this, InteractionMgrWidgetClass);
+		if (InteractionMgrWidgetInstance)
+		{
+			InteractionMgrWidgetInstance->AddToViewport();
+
+			InteractionMgrWidgetInstance->HidePrompt();
+			InteractionMgrWidgetInstance->HideFeedback();
 		}
 	}
 }

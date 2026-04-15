@@ -13,6 +13,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "../Component/ObjectPoolComponent.h"
 #include "../Component/VocalComponent.h"
+#include "../Component/FootstepComponent.h"
 #include "../UnrealProjectGameMode.h"
 #include "../Weapon/BaseWeapon.h"
 #include "../Projectile/UnrealProjectProjectile.h"
@@ -31,6 +32,7 @@ ABaseEnemy::ABaseEnemy()
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ABaseEnemy::OnEnemyOverlapEnd);
 
 	VocalComponent = CreateDefaultSubobject<UVocalComponent>(TEXT("VocalComp"));
+	FootstepComponent = CreateDefaultSubobject<UFootstepComponent>(TEXT("FootstepComp"));
 
 	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	//GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_EnemyProjectile, ECR_Ignore);
@@ -46,6 +48,7 @@ void ABaseEnemy::BeginPlay()
 
 	if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &ABaseEnemy::HandleDeath);
+		AttributeComponent->OnKnockback.AddDynamic(this, &ABaseEnemy::HandleKnockback);
 	}
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -217,6 +220,7 @@ void ABaseEnemy::Landed(const FHitResult& Hit)
 			if (AEnemyAIController* AIController = Cast<AEnemyAIController>(GetController())) {
 				if (UBrainComponent* Brain = AIController->GetBrainComponent())
 				{
+					GetCharacterMovement()->AirControl = 0.05f;
 					Brain->ResumeLogic("Hit Reaction");
 				}
 			}
@@ -344,61 +348,6 @@ float ABaseEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	{
 		// 혹시라도 Instigator가 없는 환경 데미지 등일 경우를 대비
 		SetCommandTarget(DamageCauser);
-	}
-
-	// 넉백 적용
-	FVector KnockbackOrigin = FVector::ZeroVector;
-	float KnockbackForce = 0.0f;
-
-	// 폭발식 공격일 경우
-	if (DamageEvent.IsOfType(FRadialDamageEvent::ClassID)) {
-		const FRadialDamageEvent* RadialEvent = (FRadialDamageEvent*)&DamageEvent;
-		KnockbackOrigin = RadialEvent->Origin;
-
-		// 폭발 중심점으로부터 적까지의 거리
-		float Distance = FVector::Dist(this->GetActorLocation(), KnockbackOrigin);
-
-		// 투사체가 넘겨준 폭발 반경 정보
-		float InnerRadius = RadialEvent->Params.InnerRadius;
-		float OuterRadius = RadialEvent->Params.OuterRadius;
-
-		// 거리에 따른 넉백 감소 비율 계산
-		float FalloffMultiplier = 1.f;
-		if (Distance > InnerRadius && OuterRadius > InnerRadius) {
-			FalloffMultiplier = 1.0f - FMath::Clamp((Distance - InnerRadius) / (OuterRadius - InnerRadius), 0.0f, 1.0f);
-		}
-
-		if (AUnrealProjectProjectile* Projectile = Cast<AUnrealProjectProjectile>(DamageCauser))
-		{
-			// 거리에 비례하여 넉백 파워를 줄여줌
-			KnockbackForce = Projectile->GetKnockbackPower() * FalloffMultiplier;
-		}
-	}
-	// 직사 무기일 경우
-	else
-	{
-		if (DamageCauser)
-		{
-			KnockbackOrigin = DamageCauser->GetActorLocation();
-		}
-
-		if (ABaseWeapon* Weapon = Cast<ABaseWeapon>(DamageCauser))
-		{
-			KnockbackForce = Weapon->GetKnockbackPower();
-		}
-	}
-
-	// 최종 넉백 적용 죽은 상태라면 넉백 차단
-	if (KnockbackForce > 0.0f && CurrentState != EEnemyState::EES_Dead)
-	{
-		FVector PushDirection = (this->GetActorLocation() - KnockbackOrigin).GetSafeNormal();
-
-		// 바닥 마찰 무시용 살짝 띄우기
-		PushDirection.Z = 0.5f;
-		PushDirection.Normalize();
-
-		FVector FinalKnockback = PushDirection * KnockbackForce;
-		this->LaunchCharacter(FinalKnockback, true, true);
 	}
 
 	return ActualDamage;
@@ -569,6 +518,23 @@ void ABaseEnemy::HandleDeath(AActor* VictimActor, AActor* KillerActor)
 
 	// 5초 뒤에 삭제
 	//SetLifeSpan(5.0f);
+}
+
+void ABaseEnemy::HandleKnockback(FVector PushDirection, float Force)
+{
+	if (CurrentState == EEnemyState::EES_Dead) return;
+
+	FVector FinalKnockback = PushDirection * Force;
+	
+	// 수직 부양력 보정
+	float VerticalLiftMultiplier = 0.5f;
+	FinalKnockback.Z = Force * VerticalLiftMultiplier;
+
+	// 마찰력 씹힘 방지 및 공중 제어 불가
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	GetCharacterMovement()->AirControl = 0.0f;
+
+	this->LaunchCharacter(FinalKnockback, true, true);
 }
 
 void ABaseEnemy::Deactivate()

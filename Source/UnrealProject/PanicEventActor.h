@@ -3,15 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "InteractableBaseActor.h"
 
 #include "Interface/HitInterface.h" 
-#include "Interface/Interactable.h" 
 
 #include "PanicEventActor.generated.h"
 
 UCLASS()
-class UNREALPROJECT_API APanicEventActor : public AActor, public IHitInterface, public IInteractable
+class UNREALPROJECT_API APanicEventActor : public AInteractableBaseActor, public IHitInterface
 {
 	GENERATED_BODY()
 	

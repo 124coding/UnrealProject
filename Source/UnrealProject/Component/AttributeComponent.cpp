@@ -4,6 +4,8 @@
 #include "AttributeComponent.h"
 #include "GameFramework/Actor.h"
 #include "../SurvivalGameInstance.h"
+#include "../Projectile/UnrealProjectProjectile.h"
+#include "../Weapon/BaseWeapon.h"
 
 // Sets default values for this component's properties
 UAttributeComponent::UAttributeComponent()
@@ -25,6 +27,8 @@ void UAttributeComponent::BeginPlay()
 
 	// ApplyDamage를 맞을 때마다 RecieveDamage 자동 실행
 	GetOwner()->OnTakeAnyDamage.AddDynamic(this, &UAttributeComponent::RecieveDamage);
+	GetOwner()->OnTakeRadialDamage.AddDynamic(this, &UAttributeComponent::ReceiveRadialDamage);
+	GetOwner()->OnTakePointDamage.AddDynamic(this, &UAttributeComponent::ReceivePointDamage);
 	// ...
 	
 }
@@ -75,6 +79,61 @@ void UAttributeComponent::RecieveDamage(AActor* DamagedActor, float Damage, cons
 		}
 
 		OnDeath.Broadcast(GetOwner(), KillerActor);
+	}
+}
+
+void UAttributeComponent::ReceiveRadialDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, FVector Origin, const FHitResult& HitInfo, AController* InstigatedBy, AActor* DamageCauser)
+{
+	if (CurrentHealth <= 0.f) return;
+
+	float KnockbackForce = 0.f;
+
+	if (AUnrealProjectProjectile* Projectile = Cast<AUnrealProjectProjectile>(DamageCauser)) {
+		KnockbackForce = Projectile->GetKnockbackPower();
+
+		// 폭발 중심점으로부터 적까지의 거리
+		float Distance = FVector::Dist(this->GetOwner()->GetActorLocation(), Origin);
+
+		// 투사체가 넘겨준 폭발 반경 정보
+		float InnerRadius = Projectile->GetInnerRadius();
+		float OuterRadius = Projectile->GetOuterRadius();
+
+		// 거리에 따른 넉백 감소 비율 계산
+		FVector2D InputRange(InnerRadius, OuterRadius); // 거리 범위
+		FVector2D OutputRange(1.0f, 0.4f); // 배수 범위
+
+		// 거리에 따른 자연스러운 보간
+		float FalloffMultiplier = FMath::GetMappedRangeValueClamped(InputRange, OutputRange, Distance);
+
+		KnockbackForce *= FalloffMultiplier;
+	}
+
+	if (KnockbackForce > 0.0f)
+	{
+		FVector PushDirection = (GetOwner()->GetActorLocation() - Origin).GetSafeNormal2D();
+
+		// 넉백 이벤트
+		OnKnockback.Broadcast(PushDirection, KnockbackForce);
+	}
+}
+
+void UAttributeComponent::ReceivePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotDirection, const UDamageType* DamageType, AActor* DamageCauser)
+{
+	if (CurrentHealth <= 0.f) return;
+
+	float KnockbackForce = 0.f;
+
+	if (ABaseWeapon* Weapon = Cast<ABaseWeapon>(DamageCauser))
+	{
+		KnockbackForce = Weapon->GetKnockbackPower();
+	}
+
+	if (KnockbackForce > 0.0f) {
+		FVector PushDirection = ShotDirection.GetSafeNormal();
+		PushDirection.Z = 0.2f;
+		PushDirection.Normalize();
+	
+		OnKnockback.Broadcast(PushDirection, KnockbackForce);
 	}
 }
 

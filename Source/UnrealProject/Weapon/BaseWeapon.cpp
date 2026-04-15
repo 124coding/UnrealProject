@@ -8,6 +8,7 @@
 #include "Components/SphereComponent.h"
 #include "RangedWeapon.h"
 #include "../Component/CombatComponent.h"
+#include "../Component/InteractionComponent.h"
 
 // Sets default values
 ABaseWeapon::ABaseWeapon()
@@ -36,7 +37,6 @@ ABaseWeapon::ABaseWeapon()
 			PrimitiveChild->SetCollisionObjectType(ECC_PhysicsBody);
 		}
 	}
-
 }
 
 // Called when the game starts or when spawned

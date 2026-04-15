@@ -5,6 +5,9 @@
 #include "../UnrealProject.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/OverlapResult.h"
+#include "../Character/UnrealProjectPlayerController.h"
+#include "../Interface/HitInterface.h"
+#include "../Interface/Interactable.h"
 
 AMeleeWeapon::AMeleeWeapon()
 {
@@ -79,6 +82,8 @@ void AMeleeWeapon::ExecuteFire()
 	APawn* OwnerPawn = Cast<APawn>(GetOwner());
 	if (!OwnerPawn || !OwnerPawn->GetController()) return;
 
+	AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(OwnerPawn->GetController());
+
 	FVector ViewLocation;
 	FRotator ViewRotation;
 	OwnerPawn->GetController()->GetPlayerViewPoint(ViewLocation, ViewRotation);
@@ -96,17 +101,6 @@ void AMeleeWeapon::ExecuteFire()
 	QueryParams.AddIgnoredActor(this);
 	QueryParams.AddIgnoredActor(OwnerPawn);
 
-	// Sweep 방식
-	/*bool bHit = GetWorld()->SweepMultiByChannel(
-		HitResults,
-		Start,
-		End,
-		FQuat::Identity,
-		ECC_PlayerProjectile,
-		FCollisionShape::MakeSphere(TraceRadius),
-		QueryParams
-	);*/
-
 	bool bHit = GetWorld()->OverlapMultiByChannel(
 		OverlapResults,
 		HitLocation,
@@ -116,50 +110,7 @@ void AMeleeWeapon::ExecuteFire()
 		QueryParams
 	);
 
-	// Sweep 방식의 Capsule
-	/*FVector TraceDirection = (End - Start).GetSafeNormal();
-
-	FQuat CapsuleRot = FRotationMatrix::MakeFromZ(TraceDirection).ToQuat(); 
-
-	DrawDebugCapsule(
-		GetWorld(),
-		Start + (End - Start) * 0.5f,
-		AttackRange * 0.5f,          
-		TraceRadius,                 
-		CapsuleRot,                  
-		FColor::Red,
-		false,
-		2.0f
-	);*/
-
 	DrawDebugSphere(GetWorld(), HitLocation, CurrentMeleeStat.TraceRadius, 12, FColor::Red, false, 2.0f);
-
-	// Sweep 방식
-	//if (bHit)
-	//{
-	//	// 한 번의 휘두르기에 한 놈이 두 번 맞는 걸 방지하기 위한 지역 변수
-	//	TSet<AActor*> HitActorsThisSwing;
-
-	//	for (const FHitResult& Hit : HitResults)
-	//	{
-	//		AActor* HitActor = Hit.GetActor();
-
-	//		// 이미 데미지를 준 적이면 패스
-	//		if (!HitActor || HitActorsThisSwing.Contains(HitActor)) continue;
-
-	//		// 데미지 적용
-	//		UGameplayStatics::ApplyDamage(
-	//			HitActor,
-	//			Damage,
-	//			OwnerPawn->GetController(),
-	//			this,
-	//			UDamageType::StaticClass()
-	//		);
-
-	//		// 목록에 추가
-	//		HitActorsThisSwing.Add(HitActor);
-	//	}
-	//}
 
 	if (bHit)
 	{
@@ -172,23 +123,51 @@ void AMeleeWeapon::ExecuteFire()
 			// 이미 데미지를 준 적이거나, 적이 아니면 패스
 			if (!HitActor || HitActorsThisSwing.Contains(HitActor)) continue;
 
-			UGameplayStatics::ApplyDamage(
+			FVector SwingDirection;
+
+			if (CurrentMeleeStat.MeleeType == EMeleeType::Thrust)
+			{
+				SwingDirection = ViewRotation.Vector();
+			}
+			//플레이어를 중심으로 방사형(부채꼴)
+			else if (CurrentMeleeStat.MeleeType == EMeleeType::Sweep)
+			{
+				SwingDirection = (HitActor->GetActorLocation() - OwnerPawn->GetActorLocation()).GetSafeNormal();
+				SwingDirection.Z = 0.0f;
+			}
+
+			// Overlap은 HitResult를 안주기에 Fake로 하나 생성
+			FVector HitNormal = -SwingDirection;
+			FHitResult FakeHitResult(HitActor, Overlap.GetComponent(), HitActor->GetActorLocation(), HitNormal);
+
+			UGameplayStatics::ApplyPointDamage(
 				HitActor,
 				CurrentMeleeStat.Damage,
+				SwingDirection,
+				FakeHitResult,
 				OwnerPawn->GetController(),
 				this,
 				UDamageType::StaticClass()
 			);
 
 			HitActorsThisSwing.Add(HitActor);
+
+			if (HitActor->Implements<UHitInterface>())
+			{
+				IHitInterface::Execute_GetHit(HitActor, HitActor->GetActorLocation());
+
+				if (HitActor->Implements<UInteractable>())
+				{
+					FText FeedbackText = IInteractable::Execute_GetFeedbackText(HitActor);
+
+					if (!FeedbackText.IsEmpty() && PC)
+					{
+						PC->ShowFeedback(FeedbackText, IInteractable::Execute_GetFeedbackType(HitActor));
+					}
+				}
+			}
 		}
 	}
-
-	// 중복 타격 목록 초기화
-	// IgnoreActors.Empty();
-
-	// 시작 시점의 소켓 위치 저장
-	// LastTipLocation = WeaponMesh->GetSocketLocation(TEXT("End"));
 }
 
 void AMeleeWeapon::EndAttack()

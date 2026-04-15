@@ -9,6 +9,7 @@
 // 체력이 0이 되었을 때를 알리기 위한 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeathSignature, AActor*, Victim, AActor*, Killer);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChangedSignature, float, CurrentHealth, float, MaxHealth);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnKnockbackSignature, FVector, PushDirection, float, KnockbackForce);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class UNREALPROJECT_API UAttributeComponent : public UActorComponent
@@ -54,6 +55,14 @@ public:
 	UFUNCTION()
 	void RecieveDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
+	// 방사형(폭발) 넉백 전용 (Radial Damage)
+	UFUNCTION()
+	void ReceiveRadialDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, FVector Origin, const FHitResult& HitInfo, AController* InstigatedBy, AActor* DamageCauser);
+
+	// 직사형(무기/투사체) 넉백 전용 (Point Damage)
+	UFUNCTION()
+	void ReceivePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotDirection, const UDamageType* DamageType, AActor* DamageCauser);
+
 	// 스탯 초기화 함수
 	UFUNCTION(BlueprintCallable, Category = "Attributes")
 	void InitializeStats();
@@ -72,6 +81,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Events")
 	FOnHealthChangedSignature OnHealthChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnKnockbackSignature OnKnockback;
 
 public:
 	// GameInstance의 포인터를 받아서 알아서 자기 데이터를 넣고 빼는 함수

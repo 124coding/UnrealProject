@@ -7,6 +7,7 @@
 #include "../Interface/HitInterface.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "../UnrealProject.h"
+#include "../Character/UnrealProjectPlayerController.h"
 
 void AHitScanWeapon::BeginPlay()
 {
@@ -74,8 +75,22 @@ void AHitScanWeapon::ExecuteFire()
 				UDamageType::StaticClass()
 			);
 
-			if (HitActor->GetClass()->ImplementsInterface(UHitInterface::StaticClass())) {
-				IHitInterface::Execute_GetHit(HitActor, HitResult.ImpactPoint);
+			if (!HitActor->Implements<UHitInterface>()) return;
+
+			IHitInterface::Execute_GetHit(HitActor, HitResult.ImpactPoint);
+
+			if (!HitActor->Implements<UInteractable>()) return;
+
+			FText FeedbackText = IInteractable::Execute_GetFeedbackText(HitActor);
+
+			if (FeedbackText.IsEmpty()) return;
+
+			if (APawn* Player = Cast<APawn>(GetOwner()))
+			{
+				if (AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(Player->GetController()))
+				{
+					PC->ShowFeedback(FeedbackText, IInteractable::Execute_GetFeedbackType(HitActor));
+				}
 			}
 		}
 

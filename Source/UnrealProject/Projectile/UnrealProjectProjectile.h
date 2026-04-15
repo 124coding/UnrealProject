@@ -119,6 +119,8 @@ public:
 	void InitProjectile(float tDamage, EDamageMethod tDamageMethod = EDamageMethod::SingleTarget, float tExplosionRadius = 0.f, float tMinimumDamage = 0.f, float tInnerRadius = 0.f, bool tbExplodeOnTimer = false, float tExplosionDelay = 0.f, float tKockbackPower = 0.f);
 
 	float GetKnockbackPower() const { return KnockbackPower; }
+	float GetInnerRadius() const { return InnerRadius; }
+	float GetOuterRadius() const { return ExplosionRadius; }
 
 protected:
 	bool bIsActive = false;

@@ -188,7 +188,19 @@ public:
 		return CurrentState == EPlayerState::EPS_Dead;
 	}
 
+	UFUNCTION()
+	void HandleKnockback(FVector PushDirection, float Force);
+
 public:
+	// 0.1초마다 실행될 확인용 함수
+	void CheckInteractable();
+
+	FTimerHandle InteractCheckTimer;
+
+	// 현재 닿아있는 상호작용 가능 물체
+	UPROPERTY()
+	AActor* CurrentInteractable;
+
 	void TryInteract();
 
 protected:

@@ -7,6 +7,10 @@
 #include "../Component/ObjectPoolComponent.h"
 #include "../UnrealProject.h"
 #include "Kismet/GameplayStatics.h"
+#include "../Interface/HitInterface.h"
+#include "../Interface/Interactable.h"
+#include "../Character/UnrealProjectPlayerController.h"
+#include "Engine/OverlapResult.h"
 
 AUnrealProjectProjectile::AUnrealProjectProjectile() 
 {
@@ -61,6 +65,24 @@ void AUnrealProjectProjectile::DealDamage(const FHitResult& HitResult)
 			this,
 			UDamageType::StaticClass()
 		);
+
+		if (!HitActor->Implements<UHitInterface>()) return;
+
+		IHitInterface::Execute_GetHit(HitActor, HitResult.ImpactPoint);
+
+		if (!HitActor->Implements<UInteractable>()) return;
+
+		FText FeedbackText = IInteractable::Execute_GetFeedbackText(HitActor);
+
+		if (FeedbackText.IsEmpty()) return;
+
+		if (APawn* Player = Cast<APawn>(GetInstigator()))
+		{
+			if (AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(Player->GetController()))
+			{
+				PC->ShowFeedback(FeedbackText, IInteractable::Execute_GetFeedbackType(HitActor));
+			}
+		}
 	}
 	// 광역 폭발 데미지
 	else if (DamageMethod == EDamageMethod::RadialDamage) {
@@ -94,6 +116,49 @@ void AUnrealProjectProjectile::DealDamage(const FHitResult& HitResult)
 
 		// 바깥쪽 반경 (데미지 감소 구간) - 노란색 구체
 		DrawDebugSphere(GetWorld(), Epicenter, ExplosionRadius, 24, FColor::Yellow, false, 2.0f, 0, 1.0f);
+
+		APawn* OwnerPawn = Cast<APawn>(GetInstigator());
+		if (!OwnerPawn) return;
+
+		AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(OwnerPawn->GetController());
+		if (!PC) return;
+
+		TArray<FOverlapResult> OverlapResults;
+		FCollisionShape SphereCollision = FCollisionShape::MakeSphere(ExplosionRadius);
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(this);
+		QueryParams.AddIgnoredActor(OwnerPawn);
+
+		bool bOverlapped = GetWorld()->OverlapMultiByChannel(
+			OverlapResults,
+			Epicenter,
+			FQuat::Identity,
+			ECC_PlayerProjectile,
+			SphereCollision
+		);
+
+		if (bOverlapped)
+		{
+
+			// 맞은 액터들 중 Hit, Interact Interface가 있는 액터들은 그 코드를 수행
+			for (const FOverlapResult& Overlap : OverlapResults)
+			{
+				AActor* CaughtActor = Overlap.GetActor();
+
+				if (!CaughtActor || CaughtActor == this || IgnoredActors.Contains(CaughtActor)) continue;
+
+				if (!CaughtActor->Implements<UHitInterface>()) continue;
+
+				IHitInterface::Execute_GetHit(CaughtActor, CaughtActor->GetActorLocation());
+
+				if (!CaughtActor->Implements<UInteractable>()) continue;
+
+				FText FeedbackText = IInteractable::Execute_GetFeedbackText(CaughtActor);
+				if (FeedbackText.IsEmpty() || !PC) continue;
+
+				PC->ShowFeedback(FeedbackText, IInteractable::Execute_GetFeedbackType(CaughtActor));
+			}
+		}
 
 		UE_LOG(LogTemp, Warning, TEXT("Radial Damage Applied at: %s"), *Epicenter.ToString());
 	}
@@ -211,6 +276,12 @@ void AUnrealProjectProjectile::Deactivate()
 void AUnrealProjectProjectile::Launch(FVector ShootDirection, float SpeedOverride)
 {
 	if (!ProjectileMovement) return;
+
+	if (!GetInstigator()) {
+		if (AActor* Weapon = GetOwner()) {
+			SetInstigator(Cast<APawn>(Weapon->GetOwner()));
+		}
+	}
 
 	// 오버라이드 값이 들어오면 본인의 속도를 사용하고 아니면 자기 속도
 	float FinalSpeed = (SpeedOverride > 0.0f) ? SpeedOverride : ProjectileMovement->InitialSpeed;

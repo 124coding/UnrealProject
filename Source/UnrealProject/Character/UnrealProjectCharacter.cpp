@@ -87,6 +87,7 @@ void AUnrealProjectCharacter::BeginPlay()
 
 	if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Downed);
+		AttributeComponent->OnKnockback.AddDynamic(this, &AUnrealProjectCharacter::HandleKnockback);
 	}
 
 	if (DroneComponent)
@@ -99,6 +100,14 @@ void AUnrealProjectCharacter::BeginPlay()
 		GetMesh()->SetCollisionProfileName(TEXT("Player"));
 
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		InteractCheckTimer,
+		this,
+		&AUnrealProjectCharacter::CheckInteractable,
+		0.1f,
+		true
+	);
 
 	LoadAllPlayerState();
 
@@ -447,6 +456,10 @@ void AUnrealProjectCharacter::Landed(const FHitResult& Hit)
 	// 떨어질때 속도 체크
 	float FallingSpeed = -GetVelocity().Z;
 
+	// 물리 세팅 원상 복구
+	GetCharacterMovement()->GravityScale = 1.f;
+	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
+	GetCharacterMovement()->AirControl = 0.05f;
 
 	if (FootstepComponent)
 	{
@@ -458,10 +471,31 @@ void AUnrealProjectCharacter::Landed(const FHitResult& Hit)
 	MakeNoise(VolumeMultiplier, this, GetActorLocation());
 }
 
-void AUnrealProjectCharacter::TryInteract()
+void AUnrealProjectCharacter::HandleKnockback(FVector PushDirection, float Force)
 {
-	if (!bCanInteract) return;
+	if (CurrentState != EPlayerState::EPS_Normal) return;
 
+	FVector FinalKnockback = PushDirection * Force;
+
+	// 수직 부양력 보정
+	float VerticalLiftMultiplier = 0.5f;
+	FinalKnockback.Z = Force * VerticalLiftMultiplier;
+
+	// 마찰력 씹힘 방지 및 공중 제어 불가
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	GetCharacterMovement()->AirControl = 0.f;
+
+	// 넉백 받을 때
+	GetCharacterMovement()->BrakingDecelerationFalling = 500.0f;
+
+	// 중력을 가볍게 하여 체공시간 확보
+	GetCharacterMovement()->GravityScale = 0.5f;
+
+	this->LaunchCharacter(FinalKnockback, true, true);
+}
+
+void AUnrealProjectCharacter::CheckInteractable()
+{
 	AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(GetController());
 	if (!PC) return;
 
@@ -486,27 +520,67 @@ void AUnrealProjectCharacter::TryInteract()
 		TraceParams
 	);
 
-	// 디버그 라인
-	DrawDebugLine(GetWorld(), StartLocation, EndLocation, bHit ? FColor::Green : FColor::Red);
+	if (bHit && HitResult.GetActor()->Implements<UInteractable>()) {
+		// 레이저에 맞은 물체가 상호작용 물체면 기억
+		CurrentInteractable = HitResult.GetActor();
+		FText ItemText = IInteractable::Execute_GetInteractText(CurrentInteractable);
+		
+		FText KeyName = FText::FromString(TEXT("?"));
 
-	if (bHit) {
-		AActor* HitActor = HitResult.GetActor();
+		// 로컬 플레이어의 입력 서브시스템을 가져옴
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer())) {
 
-		if (HitActor && HitActor->Implements<UInteractable>()) {
-			IInteractable::Execute_Interact(HitActor, this);
+			// InteractAction에 매핑된 모든 키 배열을 가져옴
+			TArray<FKey> BoundKeys = Subsystem->QueryKeysMappedToAction(InteractAction);
 
-			bCanInteract = false;
-			
-			// 상호 작용에 1초 딜레이 주기
-			FTimerHandle WaitHandle;
-			GetWorld()->GetTimerManager().SetTimer(
-				WaitHandle,
-				FTimerDelegate::CreateLambda([&]() {
-					bCanInteract = true;
-					}), 1.0f, false
-			);
-
-			UE_LOG(LogTemp, Log, TEXT("Interact with: %s"), *HitActor->GetName());
+			// 매핑 키가 하나라도 있다면
+			if (BoundKeys.Num() > 0)
+			{
+				// 첫 번째 매핑 키를 가져옴
+				KeyName = BoundKeys[0].GetDisplayName();
+			}
 		}
+
+		PC->UpdateAndShowPrompt(ItemText, KeyName);
+	}
+	else {
+		if (CurrentInteractable) {
+			CurrentInteractable = nullptr;
+			PC->HidePrompt();
+		}
+	}
+}
+
+void AUnrealProjectCharacter::TryInteract()
+{
+	if (!bCanInteract) return;
+
+	AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(GetController());
+	if (!PC) return;
+
+	// 기억해둔 물체가 있다면 즉시 실행
+	if (CurrentInteractable)
+	{
+		IInteractable::Execute_Interact(CurrentInteractable, this);
+
+		bCanInteract = false;
+
+		FText FeedbackText = IInteractable::Execute_GetFeedbackText(CurrentInteractable);
+		EFeedbackType FeedbackType = IInteractable::Execute_GetFeedbackType(CurrentInteractable);
+
+		PC->ShowFeedback(FeedbackText, FeedbackType);
+
+		// 상호 작용에 1초 딜레이 주기
+		FTimerHandle WaitHandle;
+		GetWorld()->GetTimerManager().SetTimer(
+			WaitHandle,
+			FTimerDelegate::CreateLambda([this]() {
+				bCanInteract = true;
+				}),
+			0.1f,
+			false
+		);
+
+		UE_LOG(LogTemp, Log, TEXT("Interact with: %s"), *CurrentInteractable->GetName());
 	}
 }

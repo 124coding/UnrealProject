@@ -6,6 +6,7 @@
 #include "UnrealProjectGameMode.h"
 #include "UnrealProject.h"
 #include "Components/BoxComponent.h"
+#include "Component/InteractionComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values

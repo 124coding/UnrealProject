@@ -69,6 +69,10 @@ public:
 	UFUNCTION()
 	void HandleDeath(AActor* VictimActor, AActor* KillerActor);
 
+	// 넉백 시 실행할 함수
+	UFUNCTION()
+	void HandleKnockback(FVector PushDirection, float Force);
+
 	// 풀로 돌아가는 함수
 	void Deactivate();
 
@@ -141,6 +145,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UVocalComponent* VocalComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	class UFootstepComponent* FootstepComponent;
 
 	// 타이머핸들 (SetLifeSpan 대신 사용)
 	FTimerHandle ReturnTimerHandle;

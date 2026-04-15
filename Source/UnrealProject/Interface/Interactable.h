@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "../EnumTypes/UITypes.h"
 #include "Interactable.generated.h"
 
 // This class does not need to be modified.
@@ -24,4 +25,16 @@ class UNREALPROJECT_API IInteractable
 public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
 	void Interact(AActor* InstigatorActor);
+
+	// 화면에 띄울 텍스트를 물어볼 때 호출
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	FText GetInteractText();
+
+	// 상호작용 후에 호출할 텍스트를 호출
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	FText GetFeedbackText();
+
+	// 상호작용 후에 호출할 애니메이션의 타입
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
+	EFeedbackType GetFeedbackType();
 };

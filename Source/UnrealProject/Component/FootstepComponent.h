@@ -30,6 +30,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Footstep")
 	class USoundBase* DefaultFootstepSound;
 
+	// 감쇠효과
+	UPROPERTY(EditAnywhere, Category = "Footstep")
+	USoundAttenuation* FootstepAttenuation;
+
 
 	// 착지 사운드
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Landed")

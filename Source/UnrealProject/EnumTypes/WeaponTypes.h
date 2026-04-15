@@ -40,6 +40,12 @@ enum class EWeaponSlot : uint8 {
 };
 
 UENUM(BlueprintType)
+enum class EMeleeType : uint8 {
+	Thrust	UMETA(DisplayName = "Thrust"),
+	Sweep	UMETA(DisplayName = "Sweep")
+};
+
+UENUM(BlueprintType)
 enum class EDamageMethod : uint8 {
 	SingleTarget	UMETA(DisplayName = "SingleTarget"),
 	RadialDamage	UMETA(DisplayName = "RadialDamage")

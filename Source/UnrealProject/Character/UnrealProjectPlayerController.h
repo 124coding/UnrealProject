@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "../EnumTypes/UITypes.h"
 #include "UnrealProjectPlayerController.generated.h"
 
 class UInputMappingContext;
@@ -18,6 +19,11 @@ class UNREALPROJECT_API AUnrealProjectPlayerController : public APlayerControlle
 
 public:
 	void ChangeInputContext(bool bIsDowned);
+
+	void UpdateAndShowPrompt(const FText& ActionText, const FText& KeyText);
+	void HidePrompt();
+
+	void ShowFeedback(const FText& Message, EFeedbackType Type);
 
 	// 게임 오버 UI 보여주는 함수
 	void ShowGameOverUI();
@@ -45,6 +51,13 @@ protected:
 
 	UPROPERTY()
 	UDirectorDebugWidget* DirectorDebugWidgetInstance;
+
+	// 상호작용 매니저 위젯
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Interaction")
+	TSubclassOf<class UInteractionMgr> InteractionMgrWidgetClass;
+
+	UPROPERTY()
+	UInteractionMgr* InteractionMgrWidgetInstance;
 
 	// 게임 오버 위젯
 	UPROPERTY(EditDefaultsOnly, Category = "UI|GameOver")

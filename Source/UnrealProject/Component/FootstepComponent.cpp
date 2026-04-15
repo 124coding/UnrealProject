@@ -63,7 +63,7 @@ void UFootstepComponent::PlayFootstepSound()
 	// 속도에 따라 소리를 다르게
 	float CurrentSpeed = Owner->GetVelocity().Size2D();
 	FVector2D SpeedRange(MinStepSound, MaxStepSound);
-	FVector2D VolumeRange(0.3f, 1.0f);
+	FVector2D VolumeRange(0.0f, 1.0f);
 	float VolumeMultiplier = FMath::GetMappedRangeValueClamped(SpeedRange, VolumeRange, CurrentSpeed);
 
 	// 피치음도 살짝 올라가게
@@ -81,16 +81,39 @@ void UFootstepComponent::PlayFootstepSound()
 	if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, End, ECC_Visibility, Params)) {
 		EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(HitResult.PhysMaterial.Get());
 
+		USoundBase* SelectedSound = DefaultFootstepSound;
+
 		if (FootstepSoundMap.Contains(SurfaceType)) {
+			SelectedSound = FootstepSoundMap[SurfaceType];
+		}
+
+		APawn* PawnOwner = Cast<APawn>(Owner);
+
+		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 30.0f, 12, FColor::Red, false, 2.0f);
+
+		// 본인이 맞는지 확인
+		bool bIsLocalPlayer = false;
+
+		if (PawnOwner && PawnOwner->GetController()) {
+			bIsLocalPlayer = PawnOwner->GetController()->IsPlayerController();
+		}
+
+		if (bIsLocalPlayer) {
+			UGameplayStatics::PlaySound2D(this, SelectedSound, VolumeMultiplier);
+		}
+		else {
 			UGameplayStatics::PlaySoundAtLocation(
 				this,
-				FootstepSoundMap[SurfaceType], 
-				HitResult.ImpactPoint, 
+				SelectedSound,
+				HitResult.ImpactPoint,
 				VolumeMultiplier,
-				PitchMultiplier);
-
-			Owner->MakeNoise(VolumeMultiplier, Cast<APawn>(Owner), HitResult.ImpactPoint);
+				PitchMultiplier,
+				0.f,
+				FootstepAttenuation
+			);
 		}
+
+		Owner->MakeNoise(VolumeMultiplier, Cast<APawn>(Owner), HitResult.ImpactPoint);
 	}
 }
 

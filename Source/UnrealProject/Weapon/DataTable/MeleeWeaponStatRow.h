@@ -18,4 +18,7 @@ struct FMeleeWeaponStatRow : public FBaseWeaponStatRow
 public:
 	UPROPERTY(EditAnywhere, Category = "Melee")
 	float TraceRadius = 20.0f;
+
+	UPROPERTY(EditAnywhere, Category = "Melee")
+	EMeleeType MeleeType = EMeleeType::Thrust;
 };
