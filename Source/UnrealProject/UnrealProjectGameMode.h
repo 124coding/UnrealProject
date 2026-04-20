@@ -7,6 +7,8 @@
 #include "EnumTypes/DirectorTypes.h"
 #include "UnrealProjectGameMode.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDirectorPhaseChanged, EDirectorPhase, NewPhase);
+
 USTRUCT(BlueprintType)
 struct FEnemySpawnInfo
 {
@@ -142,6 +144,9 @@ public:
 	// 트리거가 밟힐 때 호출할 함수
 	UFUNCTION(BlueprintCallable)
 	void SetActiveSpawnGroup(int32 NewGroupID);
+
+	UPROPERTY(BlueprintAssignable, Category = "Director|Event")
+	FOnDirectorPhaseChanged OnPhaseChanged;
 
 	void ChangePhase(EDirectorPhase NewPhase);
 

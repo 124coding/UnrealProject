@@ -338,6 +338,11 @@ bool UDroneComponent::TryActivateRevive()
 	return true;
 }
 
+float UDroneComponent::GetCooldownRatio() const
+{
+	return 1.f - (GetWorld()->GetTimerManager().GetTimerRemaining(CooldownTimerHandle) / CurrentStats.ActiveSkillCooldownTime);
+}
+
 void UDroneComponent::DoKnockback()
 {
 	FVector PlayerLocation = GetOwner()->GetActorLocation();

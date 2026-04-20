@@ -561,12 +561,12 @@ void AUnrealProjectCharacter::TryInteract()
 	// 기억해둔 물체가 있다면 즉시 실행
 	if (CurrentInteractable)
 	{
+		FText FeedbackText = IInteractable::Execute_GetFeedbackText(CurrentInteractable);
+		EFeedbackType FeedbackType = IInteractable::Execute_GetFeedbackType(CurrentInteractable);
+
 		IInteractable::Execute_Interact(CurrentInteractable, this);
 
 		bCanInteract = false;
-
-		FText FeedbackText = IInteractable::Execute_GetFeedbackText(CurrentInteractable);
-		EFeedbackType FeedbackType = IInteractable::Execute_GetFeedbackType(CurrentInteractable);
 
 		PC->ShowFeedback(FeedbackText, FeedbackType);
 

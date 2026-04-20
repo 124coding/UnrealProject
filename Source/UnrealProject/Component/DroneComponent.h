@@ -111,6 +111,7 @@ protected:
 public:
 	void ActiveDroneSkill();
 	bool TryActivateRevive();
+	float GetCooldownRatio() const;
 
 protected:
 	void OnAttackTick();

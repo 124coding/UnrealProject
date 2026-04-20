@@ -282,6 +282,8 @@ void AUnrealProjectGameMode::ChangePhase(EDirectorPhase NewPhase)
 	CurrentPhase = NewPhase;
 	TimeInCurrentPhase = 0.0f; // 페이즈가 바뀔 때마다 머문 시간 초기화
 	SpawnCooldown = 0.0f;      // 스폰 쿨타임도 초기화
+
+	OnPhaseChanged.Broadcast(CurrentPhase);
 }
 
 void AUnrealProjectGameMode::DirectorUpdateLoop()

@@ -11,5 +11,6 @@ enum class EDirectorPhase : uint8
 	Relax		UMETA(DisplayName = "Relax"),
 	BuildUp		UMETA(DisplayName = "BuildUp"),
 	Peak		UMETA(DisplayName = "Peak"),
-	FadeOut		UMETA(DisplayName = "FadeOut")
+	FadeOut		UMETA(DisplayName = "FadeOut"),
+	None
 };

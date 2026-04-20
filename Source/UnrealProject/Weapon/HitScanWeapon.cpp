@@ -6,6 +6,7 @@
 #include "DrawDebugHelpers.h" // 디버그 선 그리기
 #include "../Interface/HitInterface.h"
 #include "Particles/ParticleSystemComponent.h"
+#include "Perception/AIPerceptionSystem.h"
 #include "../UnrealProject.h"
 #include "../Character/UnrealProjectPlayerController.h"
 

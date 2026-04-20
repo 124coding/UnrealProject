@@ -13,6 +13,10 @@ void UFeedbackWidget::SetFeedbackText(const FText& Feedback)
 
 void UFeedbackWidget::PlayFeedbackAnimation(EFeedbackType Type)
 {
+	if (Anim_Positive) StopAnimation(Anim_Positive);
+	if (Anim_Negative) StopAnimation(Anim_Negative);
+	if (Anim_Neutral)  StopAnimation(Anim_Neutral);
+
 	switch (Type) {
 	case EFeedbackType::Positive:
 		if (Anim_Positive) {
