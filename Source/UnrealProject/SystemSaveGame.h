@@ -36,6 +36,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Settings|Gameplay")
 	float MouseSensitivity;
 
+	UPROPERTY()
+	TMap<FName, FKey> KeyBindings;
+
 public:
 	UPROPERTY(BlueprintReadWrite, Category = "Settings|Video")
 	FIntPoint Resolution;

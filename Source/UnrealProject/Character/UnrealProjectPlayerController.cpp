@@ -12,6 +12,9 @@
 #include "../UI/DirectorDebugWidget.h"
 #include "../UI/InteractionMgr.h"
 #include "Kismet/GameplayStatics.h"
+#include "../SystemSaveGame.h"
+#include "InputMappingContext.h"
+#include "PlayerMappableKeySettings.h"
 
 AUnrealProjectPlayerController::AUnrealProjectPlayerController()
 {
@@ -163,6 +166,38 @@ void AUnrealProjectPlayerController::ChangeBGM(EDirectorPhase NewPhase, float Fa
 void AUnrealProjectPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (UGameplayStatics::DoesSaveGameExist(TEXT("SystemSettings"), 0)) {
+		if (USystemSaveGame* SaveData = Cast<USystemSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("SystemSettings"), 0))) {
+
+			TArray<UInputMappingContext*> ContextsToUpdate;
+			if (DefaultMappingContext) ContextsToUpdate.Add(DefaultMappingContext);
+			if (DownedMappingContext) ContextsToUpdate.Add(DownedMappingContext);
+
+			for (auto& KVP : SaveData->KeyBindings) {
+				FName TargetMappingName = KVP.Key;
+				FKey NewKey = KVP.Value;
+
+				for (UInputMappingContext* IMC : ContextsToUpdate) {
+					if (!IMC) continue;
+
+					for (const FEnhancedActionKeyMapping& Mapping : IMC->GetMappings()) {
+						bool bIsMatch = false;
+						if (UPlayerMappableKeySettings* MapSettings = Mapping.GetPlayerMappableKeySettings()) {
+							bIsMatch = (MapSettings->Name == TargetMappingName);
+						}
+						else {
+							bIsMatch = (Mapping.PlayerMappableOptions.Name == TargetMappingName);
+						}
+
+						if (bIsMatch) {
+							const_cast<FEnhancedActionKeyMapping&>(Mapping).Key = NewKey;
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// get the enhanced input subsystem
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))

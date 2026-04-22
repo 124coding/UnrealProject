@@ -7,6 +7,7 @@
 
 #include "SoundSettingWidget.h"
 #include "VideoSettingWidget.h"
+#include "GameplaySettingWidget.h"
 
 #include "../SystemSaveGame.h"
 
@@ -35,12 +36,17 @@ void UMainSettingWidget::NativeConstruct()
 		WBP_SoundSettings->InitSoundSettings(CurrentSettings);
 	}
 
+	if (WBP_GameplaySettings) {
+		WBP_GameplaySettings->InitGameplaySettings(CurrentSettings);
+	}
+
 	// 버튼에 클릭 이벤트 묶어주기
 	if (Btn_Video) Btn_Video->OnClicked.AddDynamic(this, &UMainSettingWidget::OnVideoBtnClicked);
 	if (Btn_Sound) Btn_Sound->OnClicked.AddDynamic(this, &UMainSettingWidget::OnSoundBtnClicked);
 	if (Btn_Gameplay) Btn_Gameplay->OnClicked.AddDynamic(this, &UMainSettingWidget::OnGameplayBtnClicked);
 
-	if (Btn_SaveApply) Btn_SaveApply->OnClicked.AddDynamic(this, &UMainSettingWidget::OnSaveBtnClicked);
+	if (Btn_Save) Btn_Save->OnClicked.AddDynamic(this, &UMainSettingWidget::OnSaveBtnClicked);
+	if (Btn_Apply) Btn_Apply->OnClicked.AddDynamic(this, &UMainSettingWidget::OnApplyBtnClicked);
 	if (Btn_Cancel) Btn_Cancel->OnClicked.AddDynamic(this, &UMainSettingWidget::OnCancelBtnClicked);
 
 	// 시작할 때 기본으로 비디오 탭(0번) 띄우기
@@ -64,13 +70,28 @@ void UMainSettingWidget::OnGameplayBtnClicked()
 
 void UMainSettingWidget::OnSaveBtnClicked()
 {
-	if (CurrentSettings)
-	{
+	OnApplyBtnClicked();
+
+	if (CurrentSettings) {
 		UGameplayStatics::SaveGameToSlot(CurrentSettings, TEXT("SystemSettings"), 0);
 	}
 
 	if (UGameUserSettings* GraphicsSettings = UGameUserSettings::GetGameUserSettings()) {
+		GraphicsSettings->ConfirmVideoMode();
 		GraphicsSettings->SaveSettings();
+	}
+
+	RemoveFromParent();
+}
+
+void UMainSettingWidget::OnApplyBtnClicked()
+{
+
+	if (WBP_GameplaySettings) {
+		WBP_GameplaySettings->ApplyKeyBindingsToIMC();
+	}
+
+	if (UGameUserSettings* GraphicsSettings = UGameUserSettings::GetGameUserSettings()) {
 		GraphicsSettings->ApplySettings(false);
 	}
 }
@@ -81,12 +102,17 @@ void UMainSettingWidget::OnCancelBtnClicked()
 	{
 		CurrentSettings = Cast<USystemSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("SystemSettings"), 0));
 
-		WBP_SoundSettings->InitSoundSettings(CurrentSettings);
+		if (WBP_SoundSettings) WBP_SoundSettings->InitSoundSettings(CurrentSettings);
+		if (WBP_GameplaySettings) WBP_GameplaySettings->InitGameplaySettings(CurrentSettings);
+
+		if (WBP_GameplaySettings) {
+			WBP_GameplaySettings->ApplyKeyBindingsToIMC();
+		}
 	}
 
 	if (UGameUserSettings* GraphicsSettings = UGameUserSettings::GetGameUserSettings()) {
 		GraphicsSettings->LoadSettings(true); // ini 파일 다시 읽어오기
-		GraphicsSettings->ApplySettings(false); // 화면 되돌리기
+	    GraphicsSettings->ApplySettings(false); // 화면 되돌리기
 		
 		if (WBP_VideoSettings)
 		{

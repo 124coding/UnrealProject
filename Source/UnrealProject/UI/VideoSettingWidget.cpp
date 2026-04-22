@@ -35,7 +35,7 @@ void UVideoSettingWidget::OnResolutionChanged(FString SelectedItem, ESelectInfo:
 	UserSettings->SetScreenResolution(NewRes);
 
 	// 화면 즉시 갱신(미리보기)
-	UserSettings->ApplyResolutionSettings(false);
+	// UserSettings->ApplyResolutionSettings(false);
 }
 
 void UVideoSettingWidget::OnWindowModeChanged(FString SelectedItem, ESelectInfo::Type SelectionType)
@@ -54,16 +54,26 @@ void UVideoSettingWidget::OnWindowModeChanged(FString SelectedItem, ESelectInfo:
 	}
 
 	UserSettings->SetFullscreenMode(NewMode);
-	UserSettings->ApplyResolutionSettings(false);
+
+	// UserSettings->ApplyResolutionSettings(false);
 }
 
 void UVideoSettingWidget::InitVideoSettings()
 {
-	if (!UserSettings) return;
+	if (!UserSettings) {
+		UserSettings = UGameUserSettings::GetGameUserSettings();
+		if (!UserSettings) return;
+	}
+
+	UserSettings->LoadSettings(false);
 
 	// 초기 세팅
 	FIntPoint CurrentRes = UserSettings->GetScreenResolution();
 	FString ResString = FString::Printf(TEXT("%dx%d"), CurrentRes.X, CurrentRes.Y);
+
+	if (ComboBox_Resolution->FindOptionIndex(ResString) == INDEX_NONE) {
+		ComboBox_Resolution->AddOption(ResString);
+	}
 	ComboBox_Resolution->SetSelectedOption(ResString);
 
 	// 창 모드 표시

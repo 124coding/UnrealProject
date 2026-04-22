@@ -48,6 +48,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputMappingContext* DownedMappingContext;
 	// Begin Actor interface
+
+public:
+	class UInputMappingContext* GetDefaultIMC() const { return DefaultMappingContext; }
+	class UInputMappingContext* GetDownedIMC() const { return DownedMappingContext; }
+
 protected:
 
 	virtual void BeginPlay() override;

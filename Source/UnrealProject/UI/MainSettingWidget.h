@@ -29,7 +29,10 @@ protected:
 	UButton* Btn_Gameplay;
 
 	UPROPERTY(meta = (BindWidget))
-	UButton* Btn_SaveApply;
+	UButton* Btn_Save;
+
+	UPROPERTY(meta = (BindWidget))
+	UButton* Btn_Apply;
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* Btn_Cancel;
@@ -61,6 +64,9 @@ private:
 
 	UFUNCTION()
 	void OnSaveBtnClicked();
+
+	UFUNCTION()
+	void OnApplyBtnClicked();
 
 	UFUNCTION()
 	void OnCancelBtnClicked();
