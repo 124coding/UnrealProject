@@ -40,14 +40,19 @@ void UGameplaySettingWidget::RebindActionKey(UInputAction* TargetAction, FName M
 	}
 }
 
-void UGameplaySettingWidget::ApplyKeyBindingsToIMC()
+void UGameplaySettingWidget::ApplyGameplaySetting()
 {
 	if (!DefaultIMC || !SaveData) return;
 
 	AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(GetOwningPlayer());
 	if (!PC) return;
 
+	if (AUnrealProjectCharacter* Player = Cast<AUnrealProjectCharacter>(PC->GetPawn())) {
+		Player->SetMouseSensitivity(SaveData->MouseSensitivity);
+	}
+
 	TArray<UInputMappingContext*> ContextsToUpdate;
+	if (PC->GetSystemIMC()) ContextsToUpdate.Add(PC->GetSystemIMC());
 	if (PC->GetDefaultIMC()) ContextsToUpdate.Add(PC->GetDefaultIMC());
 	if (PC->GetDownedIMC()) ContextsToUpdate.Add(PC->GetDownedIMC());
 
@@ -55,9 +60,13 @@ void UGameplaySettingWidget::ApplyKeyBindingsToIMC()
 		FName TargetMappingName = KVP.Key;
 		FKey NewKey = KVP.Value;
 
+		// 등록된 모든 IMC를 순회하며 동기화
 		for (UInputMappingContext* IMC : ContextsToUpdate) {
+			
+			// Action Name이 일치하는 매핑 탐색
 			for (const FEnhancedActionKeyMapping& Mapping : IMC->GetMappings()) {
 				bool bIsMatch = false;
+
 				if (UPlayerMappableKeySettings* MapSettings = Mapping.GetPlayerMappableKeySettings()) {
 					bIsMatch = (MapSettings->Name == TargetMappingName);
 				}
@@ -75,6 +84,11 @@ void UGameplaySettingWidget::ApplyKeyBindingsToIMC()
 
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer())) {
 			AUnrealProjectCharacter* Player = Cast<AUnrealProjectCharacter>(PC->GetPawn());
+
+			if (PC->GetSystemIMC()) {
+				Subsystem->RemoveMappingContext(PC->GetSystemIMC());
+				Subsystem->AddMappingContext(PC->GetSystemIMC(), 1);
+			}
 
 			if (Player && Player->IsDowned()) {
 				Subsystem->RemoveMappingContext(PC->GetDownedIMC());

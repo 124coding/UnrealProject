@@ -73,5 +73,5 @@ public:
 	void InitGameplaySettings(class USystemSaveGame* InSettings);
 
 	// 메인에서 부를 Apply 함수
-	void ApplyKeyBindingsToIMC();
+	void ApplyGameplaySetting();
 };

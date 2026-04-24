@@ -88,7 +88,7 @@ void UMainSettingWidget::OnApplyBtnClicked()
 {
 
 	if (WBP_GameplaySettings) {
-		WBP_GameplaySettings->ApplyKeyBindingsToIMC();
+		WBP_GameplaySettings->ApplyGameplaySetting();
 	}
 
 	if (UGameUserSettings* GraphicsSettings = UGameUserSettings::GetGameUserSettings()) {
@@ -106,7 +106,7 @@ void UMainSettingWidget::OnCancelBtnClicked()
 		if (WBP_GameplaySettings) WBP_GameplaySettings->InitGameplaySettings(CurrentSettings);
 
 		if (WBP_GameplaySettings) {
-			WBP_GameplaySettings->ApplyKeyBindingsToIMC();
+			WBP_GameplaySettings->ApplyGameplaySetting();
 		}
 	}
 

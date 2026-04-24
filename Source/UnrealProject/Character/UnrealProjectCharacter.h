@@ -225,6 +225,13 @@ protected:
 	// 상호작용 쿨타임 확인
 	bool bCanInteract = true;
 
+	// 기본 감도는 1.0으로 설정
+	UPROPERTY(VisibleAnywhere, Category = "Input")
+	float MouseSensitivity = 1.0f;
+
+public:
+	// 마우스 감도를 외부(UI)에서 바꿔줄 Setter
+	void SetMouseSensitivity(float NewSensitivity) { MouseSensitivity = NewSensitivity; }
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")

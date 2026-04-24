@@ -62,6 +62,8 @@ class UNREALPROJECT_API USurvivalGameInstance : public UGameInstance
 	GENERATED_BODY()
 	
 public:
+	virtual void Init() override;
+
 	UPROPERTY(BlueprintReadWrite, Category = "SaveData")
 	bool bIsSaveDataValid = false;
 

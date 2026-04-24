@@ -4,6 +4,18 @@
 #include "SurvivalGameInstance.h"
 #include "SurvivalSaveGame.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/GameUserSettings.h"
+
+void USurvivalGameInstance::Init()
+{
+	Super::Init();
+
+	if (UGameUserSettings* GraphicsSettings = UGameUserSettings::GetGameUserSettings())
+	{
+		GraphicsSettings->LoadSettings(false);
+		GraphicsSettings->ApplySettings(false);
+	}
+}
 
 void USurvivalGameInstance::ResetCampaignData()
 {

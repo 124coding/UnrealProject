@@ -14,7 +14,9 @@
 #include "Kismet/GameplayStatics.h"
 #include "../SystemSaveGame.h"
 #include "InputMappingContext.h"
+#include "InputActionValue.h"
 #include "PlayerMappableKeySettings.h"
+#include "EnhancedInputComponent.h"
 
 AUnrealProjectPlayerController::AUnrealProjectPlayerController()
 {
@@ -163,6 +165,52 @@ void AUnrealProjectPlayerController::ChangeBGM(EDirectorPhase NewPhase, float Fa
 	CurrentAudioPhase = NewPhase;
 }
 
+void AUnrealProjectPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
+	{
+		// GamePauseAction 변수에 에셋이 잘 들어있다면 바인딩
+		if (GamePauseAction)
+		{
+			EnhancedInputComponent->BindAction(GamePauseAction, ETriggerEvent::Started, this, &AUnrealProjectPlayerController::TogglePauseMenu);
+		}
+	}
+}
+
+void AUnrealProjectPlayerController::TogglePauseMenu()
+{
+
+	bool bIsCurrentlyPaused = UGameplayStatics::IsGamePaused(GetWorld());
+
+	// 게임이 현재 멈춰 있는지 아닌지 확인하여 적용
+	if (!bIsCurrentlyPaused) {
+		UGameplayStatics::SetGamePaused(GetWorld(), true);
+
+		if (PauseMenuWidgetClass && !PauseMenuWidgetInstance) {
+			PauseMenuWidgetInstance = CreateWidget<UUserWidget>(this, PauseMenuWidgetClass);
+		}
+
+		if (PauseMenuWidgetInstance) {
+			PauseMenuWidgetInstance->AddToViewport();
+		}
+
+		bShowMouseCursor = true;
+		SetInputMode(FInputModeGameAndUI());
+	}
+	else {
+		UGameplayStatics::SetGamePaused(GetWorld(), false);
+
+		if (PauseMenuWidgetInstance) {
+			PauseMenuWidgetInstance->RemoveFromParent();
+		}
+
+		bShowMouseCursor = false;
+		SetInputMode(FInputModeGameOnly());
+	}
+}
+
 void AUnrealProjectPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -171,6 +219,7 @@ void AUnrealProjectPlayerController::BeginPlay()
 		if (USystemSaveGame* SaveData = Cast<USystemSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("SystemSettings"), 0))) {
 
 			TArray<UInputMappingContext*> ContextsToUpdate;
+			if (SystemMappingContext) ContextsToUpdate.Add(SystemMappingContext);
 			if (DefaultMappingContext) ContextsToUpdate.Add(DefaultMappingContext);
 			if (DownedMappingContext) ContextsToUpdate.Add(DownedMappingContext);
 
@@ -202,8 +251,14 @@ void AUnrealProjectPlayerController::BeginPlay()
 	// get the enhanced input subsystem
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
+		if (SystemMappingContext) {
+			Subsystem->AddMappingContext(SystemMappingContext, 1);
+		}
+
 		// add the mapping context so we get controls
-		Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		if (DefaultMappingContext) {
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
 	}
 
 	if (MainHUDWidgetClass)

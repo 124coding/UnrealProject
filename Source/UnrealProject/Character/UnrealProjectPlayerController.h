@@ -38,8 +38,31 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	void ChangeBGM(EDirectorPhase NewPhase, float FadeTime = 2.f);
+
+protected:
+
+	virtual void SetupInputComponent() override;
+
+	// 일시정지 메뉴 위젯의 클래스
+	UPROPERTY(EditAnywhere, Category = "UI")
+	TSubclassOf<class UUserWidget> PauseMenuWidgetClass;
+
+	// 메뉴 기억 포인터
+	UPROPERTY()
+	class UUserWidget* PauseMenuWidgetInstance;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* GamePauseAction;
+
+public:
+	UFUNCTION(BlueprintCallable)
+	void TogglePauseMenu();
 	
 protected:
+
+	// 시스템 단축키 전용 컨텍스트
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputMappingContext* SystemMappingContext;
 
 	/** Input Mapping Context to be used for player input */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
@@ -50,6 +73,7 @@ protected:
 	// Begin Actor interface
 
 public:
+	class UInputMappingContext* GetSystemIMC() const { return SystemMappingContext; }
 	class UInputMappingContext* GetDefaultIMC() const { return DefaultMappingContext; }
 	class UInputMappingContext* GetDownedIMC() const { return DownedMappingContext; }
 

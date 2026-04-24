@@ -20,6 +20,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "../DirectorDataSubsystem.h"
+#include "../SystemSaveGame.h"
 
 #include "DrawDebugHelpers.h"
 #include "../Interface/Interactable.h"
@@ -84,6 +85,10 @@ void AUnrealProjectCharacter::BeginPlay()
 	//		CrosshairWidget->AddToViewport();
 	//	}
 	//}
+
+	if (USystemSaveGame* SaveData = Cast<USystemSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("SystemSettings"), 0))) {
+		this->MouseSensitivity = SaveData->MouseSensitivity;
+	}
 
 	if (AttributeComponent) {
 		AttributeComponent->OnDeath.AddDynamic(this, &AUnrealProjectCharacter::Downed);
@@ -172,6 +177,7 @@ void AUnrealProjectCharacter::SetupPlayerInputComponent(UInputComponent* PlayerI
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+
 		// Firing
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, CombatComponent, &UCombatComponent::Attack);
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, CombatComponent, &UCombatComponent::StopAttack);
@@ -444,8 +450,8 @@ void AUnrealProjectCharacter::Look(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		// add yaw and pitch input to controller
-		AddControllerYawInput(LookAxisVector.X);
-		AddControllerPitchInput(LookAxisVector.Y);
+		AddControllerYawInput(LookAxisVector.X * MouseSensitivity);
+		AddControllerPitchInput(LookAxisVector.Y * MouseSensitivity);
 	}
 }
 
