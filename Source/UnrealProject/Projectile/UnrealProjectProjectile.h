@@ -51,6 +51,10 @@ protected:
 	float KnockbackPower = 500.f;
 
 	// Æø¹ß ¹Ý°æ
+	UPROPERTY(EditDefaultsOnly, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
+	class UParticleSystem* ExplosionParticle;
+
+	// Æø¹ß ¹Ý°æ
 	UPROPERTY(VisibleAnywhere, Category = "Combat", meta = (EditCondition = "DamageMethod == EDamageMethod::RadialDamage"))
 	float ExplosionRadius = 200.f;
 

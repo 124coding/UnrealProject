@@ -69,7 +69,9 @@ void ARangedWeapon::ExecuteFire()
 			FVector::ZeroVector,
 			FRotator::ZeroRotator,
 			EAttachLocation::KeepRelativeOffset,
-			true
+			true,
+			true,
+			ENCPoolMethod::AutoRelease
 		);
 	}
 

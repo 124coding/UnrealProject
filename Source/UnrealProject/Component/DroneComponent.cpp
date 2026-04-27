@@ -245,7 +245,9 @@ void UDroneComponent::OnAttackTick()
 					FVector::ZeroVector,
 					FRotator::ZeroRotator,
 					EAttachLocation::SnapToTarget,
-					true
+					true,
+					true,
+					ENCPoolMethod::AutoRelease
 				);
 			}
 

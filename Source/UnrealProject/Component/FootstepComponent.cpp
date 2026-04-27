@@ -89,7 +89,7 @@ void UFootstepComponent::PlayFootstepSound()
 
 		APawn* PawnOwner = Cast<APawn>(Owner);
 
-		DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 30.0f, 12, FColor::Red, false, 2.0f);
+		// DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 30.0f, 12, FColor::Red, false, 2.0f);
 
 		// 본인이 맞는지 확인
 		bool bIsLocalPlayer = false;

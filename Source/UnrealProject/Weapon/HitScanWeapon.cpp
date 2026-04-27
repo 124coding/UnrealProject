@@ -9,10 +9,55 @@
 #include "Perception/AIPerceptionSystem.h"
 #include "../UnrealProject.h"
 #include "../Character/UnrealProjectPlayerController.h"
+#include "Components/DecalComponent.h"
 
 void AHitScanWeapon::BeginPlay()
 {
 	Super::BeginPlay();
+
+	for (int i = 0; i < 30; ++i) {
+		UParticleSystemComponent* PooledImpact = UGameplayStatics::SpawnEmitterAtLocation(
+			GetWorld(),
+			CurrentHitScanStat.DefaultImpactParticle,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			FVector(0.5f),
+			false
+		);
+
+		if (PooledImpact) {
+			PooledImpact->Deactivate();
+			ImpactPool.Add(PooledImpact);
+		}
+	}
+
+	if (CurrentHitScanStat.BeamParticles) {
+		// 이펙트를 총구에 부착해서 생성
+		PooledBeamComponent = UGameplayStatics::SpawnEmitterAttached(
+			CurrentHitScanStat.BeamParticles,
+			WeaponMesh,
+			MuzzleSocketName,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::SnapToTarget,
+			false
+		);
+
+		if (PooledBeamComponent)
+		{
+			PooledBeamComponent->Deactivate();
+		}
+	}
+
+	DecalTimers.SetNum(30);
+	for (int32 i = 0; i < 30; i++)
+	{
+		UDecalComponent* Decal = NewObject<UDecalComponent>(this);
+		Decal->RegisterComponentWithWorld(GetWorld());
+		Decal->SetVisibility(false);
+
+		DecalPool.Add(Decal);
+	}
 }
 
 void AHitScanWeapon::ExecuteFire()
@@ -76,21 +121,21 @@ void AHitScanWeapon::ExecuteFire()
 				UDamageType::StaticClass()
 			);
 
-			if (!HitActor->Implements<UHitInterface>()) return;
+			if (HitActor->Implements<UHitInterface>()) {
+				IHitInterface::Execute_GetHit(HitActor, HitResult.ImpactPoint);
+			}
 
-			IHitInterface::Execute_GetHit(HitActor, HitResult.ImpactPoint);
+			if (HitActor->Implements<UInteractable>()) {
+				FText FeedbackText = IInteractable::Execute_GetFeedbackText(HitActor);
 
-			if (!HitActor->Implements<UInteractable>()) return;
-
-			FText FeedbackText = IInteractable::Execute_GetFeedbackText(HitActor);
-
-			if (FeedbackText.IsEmpty()) return;
-
-			if (APawn* Player = Cast<APawn>(GetOwner()))
-			{
-				if (AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(Player->GetController()))
-				{
-					PC->ShowFeedback(FeedbackText, IInteractable::Execute_GetFeedbackType(HitActor));
+				if (!FeedbackText.IsEmpty()) {
+					if (APawn* Player = Cast<APawn>(GetOwner()))
+					{
+						if (AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(Player->GetController()))
+						{
+							PC->ShowFeedback(FeedbackText, IInteractable::Execute_GetFeedbackType(HitActor));
+						}
+					}
 				}
 			}
 		}
@@ -103,25 +148,88 @@ void AHitScanWeapon::ExecuteFire()
 			SurfaceType = UPhysicalMaterial::DetermineSurfaceType(HitResult.PhysMaterial.Get());
 		}
 
-		UParticleSystem* SelectedParticle = nullptr;
-
-		if (CurrentHitScanStat.DefaultImpactParticle) {
-			SelectedParticle = CurrentHitScanStat.DefaultImpactParticle; // 일단 기본 파티클
-		}
-
-		// 맞은 재질이 TMap에 있다면 교체
-		if (CurrentHitScanStat.ImpactParticleMap.Contains(SurfaceType))
-		{
-			SelectedParticle = CurrentHitScanStat.ImpactParticleMap[SurfaceType];
-		}
+		UParticleSystem* SelectedParticle = CurrentHitScanStat.DefaultImpactParticle;
 
 		if (SelectedParticle) {
-			UGameplayStatics::SpawnEmitterAtLocation(
-				GetWorld(),
-				SelectedParticle,
-				HitResult.ImpactPoint,
-				HitResult.ImpactNormal.Rotation() // 벽의 각도에 맞춰 이펙트 회전
-			);
+			if (CurrentHitScanStat.ImpactParticleMap.Contains(SurfaceType))
+			{
+				SelectedParticle = CurrentHitScanStat.ImpactParticleMap[SurfaceType];
+			}
+
+			UParticleSystemComponent* Target = nullptr;
+			for (auto Comp : ImpactPool)
+			{
+				if (!Comp->IsActive())
+				{
+					Target = Comp;
+					break;
+				}
+			}
+
+			if (Target == nullptr)
+			{
+				Target = ImpactPool[ImpactIndex % ImpactPool.Num()];
+				ImpactIndex++;
+
+				Target->Deactivate();
+			}
+
+			Target->SetTemplate(SelectedParticle);
+			Target->SetWorldLocationAndRotation(HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation());
+			Target->Activate(true);
+		}
+
+		// 총알 흔적
+
+		if (HitActor && !HitActor->IsA<APawn>()) {
+			UMaterialInterface* DecalMaterial = nullptr;
+
+			if (CurrentHitScanStat.DefaultDecal) {
+				DecalMaterial = CurrentHitScanStat.DefaultDecal;
+			}
+
+			if (CurrentHitScanStat.DecalMap.Contains(SurfaceType))
+			{
+				DecalMaterial = CurrentHitScanStat.DecalMap[SurfaceType];
+			}
+
+			if (DecalMaterial && HitResult.bBlockingHit && DecalPool.Num() > 0) {
+
+				// 가장 오래된 데칼 컴포넌트
+				int32 CurrentTargetIndex = DecalIndex % DecalPool.Num();
+				UDecalComponent* TargetDecal = DecalPool[CurrentTargetIndex];
+				DecalIndex++;
+
+				// 재질과 크기를 세팅
+				TargetDecal->SetDecalMaterial(DecalMaterial);
+				TargetDecal->DecalSize = FVector(10.f, 5.f, 5.f);
+
+				// 맞은 위치와 각도로 이동시
+				TargetDecal->SetWorldLocationAndRotation(
+					HitResult.ImpactPoint,
+					(-HitResult.ImpactNormal).Rotation()
+				);
+
+				TargetDecal->SetVisibility(true);
+
+				GetWorld()->GetTimerManager().ClearTimer(DecalTimers[CurrentTargetIndex]);
+
+				FTimerDelegate HideDelegate;
+				HideDelegate.BindLambda([TargetDecal]()
+					{
+						if (IsValid(TargetDecal))
+						{
+							TargetDecal->SetVisibility(false);
+						}
+					});
+
+				GetWorld()->GetTimerManager().SetTimer(
+					DecalTimers[CurrentTargetIndex],
+					HideDelegate,
+					5.0f,
+					false
+				);
+			}
 		}
 
 		// 피격 사운드
@@ -156,21 +264,10 @@ void AHitScanWeapon::ExecuteFire()
 			0.5f                // 선 두께
 		);
 
-		if (CurrentHitScanStat.BeamParticles) {
-			// 이펙트를 총구에 부착해서 생성
-			UParticleSystemComponent* Beam = UGameplayStatics::SpawnEmitterAttached(
-				CurrentHitScanStat.BeamParticles,
-				WeaponMesh,
-				MuzzleSocketName,
-				FVector::ZeroVector,
-				FRotator::ZeroRotator,
-				EAttachLocation::SnapToTarget
-			);
+		if (PooledBeamComponent) {
+			PooledBeamComponent->SetVectorParameter(BeamTargetParamName, BeamEndPoint);
 
-			if (Beam)
-			{
-				Beam->SetVectorParameter(BeamTargetParamName, BeamEndPoint);
-			}
+			PooledBeamComponent->Activate(true);
 		}
 	}
 }

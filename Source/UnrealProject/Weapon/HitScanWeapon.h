@@ -25,6 +25,24 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HitScan|Stat")
 	FHitScanWeaponStatRow CurrentHitScanStat;
 
+	// 무기에 영구적으로 부착해둘 빔 파티클 컴포넌트
+	UPROPERTY()
+	class UParticleSystemComponent* PooledBeamComponent;
+
+	// 풀링용 임팩트 파티클 배열
+	UPROPERTY()
+	TArray<UParticleSystemComponent*> ImpactPool;
+
+	int32 ImpactIndex = 0;
+
+	UPROPERTY()
+	TArray<class UDecalComponent*> DecalPool;
+
+	// 데칼 관리 타이머
+	TArray<FTimerHandle> DecalTimers;
+
+	int32 DecalIndex = 0;
+
 	//UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "HitScan|FX")
 	//class UParticleSystem* ImpactParticles; // 벽/적에 맞았을 때 뜨는 이펙트 (나이아가라로 변경 가능)
 

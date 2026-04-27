@@ -11,6 +11,7 @@
 #include "../Interface/Interactable.h"
 #include "../Character/UnrealProjectPlayerController.h"
 #include "Engine/OverlapResult.h"
+#include "Particles/ParticleSystemComponent.h"
 
 AUnrealProjectProjectile::AUnrealProjectProjectile() 
 {
@@ -111,11 +112,24 @@ void AUnrealProjectProjectile::DealDamage(const FHitResult& HitResult)
 			UGameplayStatics::PlaySoundAtLocation(this, ExplosionSound, GetActorLocation());
 		}
 
-		// 안쪽 반경 (100% 데미지 구간) - 빨간색 구체
-		DrawDebugSphere(GetWorld(), Epicenter, InnerRadius, 24, FColor::Red, false, 2.0f, 0, 2.0f);
+		//// 안쪽 반경 (100% 데미지 구간) - 빨간색 구체
+		//DrawDebugSphere(GetWorld(), Epicenter, InnerRadius, 24, FColor::Red, false, 2.0f, 0, 2.0f);
 
-		// 바깥쪽 반경 (데미지 감소 구간) - 노란색 구체
-		DrawDebugSphere(GetWorld(), Epicenter, ExplosionRadius, 24, FColor::Yellow, false, 2.0f, 0, 1.0f);
+		//// 바깥쪽 반경 (데미지 감소 구간) - 노란색 구체
+		//DrawDebugSphere(GetWorld(), Epicenter, ExplosionRadius, 24, FColor::Yellow, false, 2.0f, 0, 1.0f);
+
+		if (ExplosionParticle) {
+			UParticleSystemComponent* ParticleComp = UGameplayStatics::SpawnEmitterAtLocation(
+				GetWorld(),
+				ExplosionParticle,
+				Epicenter,
+				FRotator::ZeroRotator
+			);
+
+			if (ParticleComp) {
+				ParticleComp->SetVectorParameter(FName("ExplosionRadius"), FVector(ExplosionRadius, ExplosionRadius, ExplosionRadius));
+			}
+		}
 
 		APawn* OwnerPawn = Cast<APawn>(GetInstigator());
 		if (!OwnerPawn) return;
