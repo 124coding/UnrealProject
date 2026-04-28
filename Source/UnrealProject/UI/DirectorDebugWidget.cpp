@@ -5,6 +5,7 @@
 #include "Components/TextBlock.h"
 #include "../DirectorDataSubsystem.h" 
 #include "../UnrealProjectGameMode.h" 
+#include "../PoolState.h" 
 #include "Kismet/GameplayStatics.h"
 
 void UDirectorDebugWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
@@ -25,23 +26,25 @@ void UDirectorDebugWidget::NativeTick(const FGeometry& MyGeometry, float InDelta
 		if (Text_CurrentPhase) {
 			FString PhaseName = TEXT("Unknown");
 
-			switch (GM->CurrentPhase)
-			{
-			case EDirectorPhase::Relax:
-				PhaseName = TEXT("RELAX");
-				break;
+			if (APoolState* GS = GetWorld()->GetGameState<APoolState>()) {
+				switch (GS->CurrentPhase)
+				{
+				case EDirectorPhase::Relax:
+					PhaseName = TEXT("RELAX");
+					break;
 
-			case EDirectorPhase::BuildUp: 
-				PhaseName = TEXT("BUILD UP");
-				break;
+				case EDirectorPhase::BuildUp:
+					PhaseName = TEXT("BUILD UP");
+					break;
 
-			case EDirectorPhase::Peak:    
-				PhaseName = TEXT("PEAK");
-				break;
+				case EDirectorPhase::Peak:
+					PhaseName = TEXT("PEAK");
+					break;
 
-			case EDirectorPhase::FadeOut: 
-				PhaseName = TEXT("FADE OUT"); 
-				break;
+				case EDirectorPhase::FadeOut:
+					PhaseName = TEXT("FADE OUT");
+					break;
+				}
 			}
 
 			Text_CurrentPhase->SetText(FText::FromString(FString::Printf(TEXT("Phase: %s"), *PhaseName)));

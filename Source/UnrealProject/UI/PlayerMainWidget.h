@@ -17,6 +17,9 @@ class UNREALPROJECT_API UPlayerMainWidget : public UUserWidget
 protected:
 	UPROPERTY(meta = (BindWidget))
 	class UDroneMainWidget* WBP_DroneMainPanel;
+
+	UPROPERTY(BlueprintReadOnly, meta = (BindWidget))
+	class UUserWidget* WBP_Crosshair;
 	
 public:
 	void InitializeHUD(class UDroneComponent* DroneComp);

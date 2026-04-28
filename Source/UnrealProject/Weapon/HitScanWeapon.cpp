@@ -231,6 +231,13 @@ void AHitScanWeapon::ExecuteFire()
 				);
 			}
 		}
+		
+		if(HitActor && HitActor->IsA<APawn>()){
+			AUnrealProjectPlayerController* PC = Cast<AUnrealProjectPlayerController>(GetInstigatorController());
+			if (PC) {
+				PC->PlayHitMarkerEvent();
+			}
+		}
 
 		// 피격 사운드
 

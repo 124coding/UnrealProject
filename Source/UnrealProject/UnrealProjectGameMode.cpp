@@ -8,6 +8,7 @@
 #include "Component/ObjectPoolComponent.h"
 #include "SpawnVolume.h"
 #include "Enemy/BaseEnemy.h"
+#include "PoolState.h"
 #include "DirectorDataSubsystem.h"
 
 AUnrealProjectGameMode::AUnrealProjectGameMode()
@@ -22,7 +23,12 @@ AUnrealProjectGameMode::AUnrealProjectGameMode()
 void AUnrealProjectGameMode::ResetDirectorState()
 {
 	// FSM 상태 초기화
-	CurrentPhase = EDirectorPhase::Relax;
+
+	APoolState* PoolState = GetWorld()->GetGameState<APoolState>();
+	if (!PoolState) return;
+
+	PoolState->CurrentPhase = EDirectorPhase::Relax;
+
 	TimeInCurrentPhase = 0.0f;
 	SpawnCooldown = 0.0f;
 
@@ -38,7 +44,7 @@ void AUnrealProjectGameMode::ResetDirectorState()
 	CurrentActiveGroupID = 0;
 
 	// 맵에 남아있는 모든 적 퇴근
-	for (const auto& Pair : EnemyPoolMap)
+	for (const auto& Pair : PoolState->EnemyPoolMap)
 	{
 		UObjectPoolComponent* EnemyPool = Pair.Value;
 		if (EnemyPool)
@@ -48,7 +54,7 @@ void AUnrealProjectGameMode::ResetDirectorState()
 	}
 
 	// 날아가고 있던 모든 적의 총알 일괄 회수
-	for (const auto& Pair : EnemyProjectilePoolMap)
+	for (const auto& Pair : PoolState->EnemyProjectilePoolMap)
 	{
 		UObjectPoolComponent* ProjectilePool = Pair.Value;
 		if (ProjectilePool)
@@ -64,8 +70,11 @@ void AUnrealProjectGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 
+	APoolState* PoolState = GetWorld()->GetGameState<APoolState>();
+	if (!PoolState) return;
+
 	// 설정된 적 종류만큼 풀 컴포넌트 동적 생성
-	for (auto& Elem : InitialEnemyPoolConfig) {
+	for (auto& Elem : PoolState->InitialEnemyPoolConfig) {
 		TSubclassOf<AActor> ClassType = Elem.Key;
 		int32 Count = Elem.Value;
 
@@ -81,11 +90,11 @@ void AUnrealProjectGameMode::BeginPlay()
 			NewPool->InitializePool(ClassType, Count);
 
 			// 맵에 저장
-			EnemyPoolMap.Add(ClassType, NewPool);
+			PoolState->EnemyPoolMap.Add(ClassType, NewPool);
 		}
 	}
 
-	for (auto& Elem : InitialEnemyProjectilePoolConfig) {
+	for (auto& Elem : PoolState->InitialEnemyProjectilePoolConfig) {
 		TSubclassOf<AActor> ClassType = Elem.Key;
 		int32 Count = Elem.Value;
 
@@ -101,7 +110,7 @@ void AUnrealProjectGameMode::BeginPlay()
 			NewPool->InitializePool(ClassType, Count);
 
 			// 맵에 저장
-			EnemyProjectilePoolMap.Add(ClassType, NewPool);
+			PoolState->EnemyProjectilePoolMap.Add(ClassType, NewPool);
 		}
 	}
 
@@ -279,11 +288,14 @@ void AUnrealProjectGameMode::ChangePhase(EDirectorPhase NewPhase)
 {
 	if (NewPhase == EDirectorPhase::Peak && !bCanEnterPeak) return;
 
-	CurrentPhase = NewPhase;
+	APoolState* PoolState = GetWorld()->GetGameState<APoolState>();
+	if (!PoolState) return;
+
+	PoolState->CurrentPhase = NewPhase;
 	TimeInCurrentPhase = 0.0f; // 페이즈가 바뀔 때마다 머문 시간 초기화
 	SpawnCooldown = 0.0f;      // 스폰 쿨타임도 초기화
 
-	OnPhaseChanged.Broadcast(CurrentPhase);
+	PoolState->OnPhaseChanged.Broadcast(PoolState->CurrentPhase);
 }
 
 void AUnrealProjectGameMode::DirectorUpdateLoop()
@@ -316,7 +328,10 @@ void AUnrealProjectGameMode::DirectorUpdateLoop()
 		return;
 	}*/
 
-	switch (CurrentPhase) {
+	APoolState* PoolState = GetWorld()->GetGameState<APoolState>();
+	if (!PoolState) return;
+
+	switch (PoolState->CurrentPhase) {
 	case EDirectorPhase::Relax:
 
 		// Stress 감소
@@ -455,17 +470,20 @@ AActor* AUnrealProjectGameMode::SpawnProjectileFromPool(TSubclassOf<AActor> Proj
 		return nullptr;
 	}
 
-	if (!EnemyProjectilePoolMap.Contains(ProjectileClass)) {
+	APoolState* PoolState = GetWorld()->GetGameState<APoolState>();
+	if (!PoolState) return nullptr;
+
+	if (!PoolState->EnemyProjectilePoolMap.Contains(ProjectileClass)) {
 		// 풀이 없다면 새로 생성해서 TMap에 등록
 		UObjectPoolComponent* NewPool = NewObject<UObjectPoolComponent>(this);
 
 		NewPool->RegisterComponent();
 
 		NewPool->InitializePool(ProjectileClass, 50); // 50개 정도 생성
-		EnemyProjectilePoolMap.Add(ProjectileClass, NewPool);
+		PoolState->EnemyProjectilePoolMap.Add(ProjectileClass, NewPool);
 	}
 
-	UObjectPoolComponent* TargetPool = EnemyProjectilePoolMap[ProjectileClass];
+	UObjectPoolComponent* TargetPool = PoolState->EnemyProjectilePoolMap[ProjectileClass];
 	AActor* Projectile = TargetPool->SpawnFromPool(Location, Rotation);
 
 	return Projectile;
@@ -479,7 +497,10 @@ void AUnrealProjectGameMode::SetActiveSpawnGroup(int32 NewGroupID)
 
 AActor* AUnrealProjectGameMode::SpawnEnemyFromPool(TSubclassOf<AActor> EnemyClass, FVector Location)
 {
-	if (UObjectPoolComponent** FoundPool = EnemyPoolMap.Find(EnemyClass)) {
+	APoolState* PoolState = GetWorld()->GetGameState<APoolState>();
+	if (!PoolState) return nullptr;
+
+	if (UObjectPoolComponent** FoundPool = PoolState->EnemyPoolMap.Find(EnemyClass)) {
 		UE_LOG(LogTemp, Warning, TEXT("Spawn this type of class: %s"), *EnemyClass->GetName());
 		ActiveEnemyCount++;
 		return (*FoundPool)->SpawnFromPool(Location, FRotator::ZeroRotator);

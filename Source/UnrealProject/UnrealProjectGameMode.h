@@ -7,7 +7,6 @@
 #include "EnumTypes/DirectorTypes.h"
 #include "UnrealProjectGameMode.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDirectorPhaseChanged, EDirectorPhase, NewPhase);
 
 USTRUCT(BlueprintType)
 struct FEnemySpawnInfo
@@ -57,13 +56,6 @@ public:
 	void GameCleared(AController* Controller);
 
 protected:
-	// 적 종류(class)를 키(key)로 넣으면, 해당 적을 담고 있는 풀을 주는 맵
-	UPROPERTY()
-	TMap<UClass*, class UObjectPoolComponent*> EnemyPoolMap;
-
-	// 게임 시작 시 만들고 싶은 적의 종류와 개수 설정
-	UPROPERTY(EditDefaultsOnly, Category = "Pool Setup")
-	TMap<TSubclassOf<AActor>, int32> InitialEnemyPoolConfig;
 
 	// 맵에 있는 모든 볼륨을 저장할 배열
 	UPROPERTY()
@@ -81,14 +73,6 @@ protected:
 	void SpendTokensToSpawn(int32 MaxTokensToSpend, const TArray<FEnemySpawnInfo>& SpawnList, AActor* TargetActor);
 
 protected:
-
-	// 적의 총알 종류를 담고 있는 맵
-	UPROPERTY()
-	TMap<UClass*, class UObjectPoolComponent*> EnemyProjectilePoolMap;
-
-	// 게임 시작 시 만들고 싶은 적의 총알의 종류와 개수 설정
-	UPROPERTY(EditDefaultsOnly, Category = "Pool Setup")
-	TMap<TSubclassOf<AActor>, int32> InitialEnemyProjectilePoolConfig;
 
 	// 디렉터 스폰 클래스 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Director|Classes")
@@ -127,9 +111,6 @@ public:
 	// FadeOut에 들어가도 되는지 확인
 	bool bCanEnterFadeOut = true;
 
-	// 현재 페이즈
-	EDirectorPhase CurrentPhase = EDirectorPhase::Relax;
-
 	// 현재 맵에 살아있는(활성화된) 적의 총 마릿수
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Director")
 	int32 ActiveEnemyCount = 0;
@@ -144,9 +125,6 @@ public:
 	// 트리거가 밟힐 때 호출할 함수
 	UFUNCTION(BlueprintCallable)
 	void SetActiveSpawnGroup(int32 NewGroupID);
-
-	UPROPERTY(BlueprintAssignable, Category = "Director|Event")
-	FOnDirectorPhaseChanged OnPhaseChanged;
 
 	void ChangePhase(EDirectorPhase NewPhase);
 

@@ -18,6 +18,8 @@
 #include "../Weapon/BaseWeapon.h"
 #include "../Projectile/UnrealProjectProjectile.h"
 #include "Engine/DamageEvents.h"
+#include "../UI/DamageTextActor.h"
+#include "../PoolState.h"
 
 // Sets default values
 ABaseEnemy::ABaseEnemy()
@@ -349,6 +351,25 @@ float ABaseEnemy::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 		// 혹시라도 Instigator가 없는 환경 데미지 등일 경우를 대비
 		SetCommandTarget(DamageCauser);
 	}
+
+	APoolState* GS = GetWorld()->GetGameState<APoolState>();
+	if (GS && GS->DamageTextPool) {
+		FVector SpawnLocation = GetActorLocation() + FVector(0.f, 0.f, 100.f);
+
+		float RandomX = FMath::RandRange(-20.f, 20.f);
+		float RandomY = FMath::RandRange(-20.f, 20.f);
+		float RandomZ = FMath::RandRange(-10.f, 10.f);
+
+		SpawnLocation += FVector(RandomX, RandomY, RandomZ);
+
+		AActor* PooledActor = GS->DamageTextPool->SpawnFromPool(SpawnLocation, FRotator::ZeroRotator);
+
+		ADamageTextActor* DamageText = Cast<ADamageTextActor>(PooledActor);
+		if (DamageText) {
+			DamageText->ShowDamage(SpawnLocation, ActualDamage);
+		}
+	}
+	
 
 	return ActualDamage;
 }

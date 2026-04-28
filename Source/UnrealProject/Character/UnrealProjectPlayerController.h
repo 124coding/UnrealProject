@@ -39,6 +39,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Audio")
 	void ChangeBGM(EDirectorPhase NewPhase, float FadeTime = 2.f);
 
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void PlayHitMarkerEvent();
+
 protected:
 
 	virtual void SetupInputComponent() override;
@@ -87,7 +90,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<class UPlayerMainWidget> MainHUDWidgetClass;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 	class UPlayerMainWidget* MainHUDInstance;
 
 	// Phase Debug È®ÀÎ¿ë À§Á¬

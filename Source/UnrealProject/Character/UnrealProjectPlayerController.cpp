@@ -7,7 +7,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/AudioComponent.h"
 #include "../Component/DroneComponent.h"
-#include "../UnrealProjectGameMode.h"
+#include "../PoolState.h"
 #include "../UI/PlayerMainWidget.h"
 #include "../UI/DirectorDebugWidget.h"
 #include "../UI/InteractionMgr.h"
@@ -302,10 +302,10 @@ void AUnrealProjectPlayerController::BeginPlay()
 		}
 	}
 
-	AUnrealProjectGameMode* GM = Cast<AUnrealProjectGameMode>(GetWorld()->GetAuthGameMode());
-	if (GM) {
-		GM->OnPhaseChanged.AddDynamic(this, &AUnrealProjectPlayerController::HandleDirectorPhaseChanged);
-		ChangeBGM(GM->CurrentPhase, 0.f);
+	APoolState* GS = GetWorld()->GetGameState<APoolState>();
+	if (GS) {
+		GS->OnPhaseChanged.AddDynamic(this, &AUnrealProjectPlayerController::HandleDirectorPhaseChanged);
+		ChangeBGM(GS->CurrentPhase, 0.f);
 	}
 
 	bShowMouseCursor = false;
