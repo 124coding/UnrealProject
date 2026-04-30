@@ -155,7 +155,7 @@ void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSi
 		ObjectTypes,
 		false,
 		ActorsToIgnore,
-		EDrawDebugTrace::ForDuration, // 디버그용(추후 None으로 변경)
+		EDrawDebugTrace::None,
 		OutHit,
 		true
 	);
@@ -173,8 +173,6 @@ void ABaseEnemy::PerformMeleeAttackHitCheck(FName SocketName, float HalfRadiusSi
 				UDamageType::StaticClass()
 			);
 		}
-
-		/*플레이어 피격 이펙트 / 소리 재생 인터페이스 호출 필요*/
 	}
 }
 

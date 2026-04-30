@@ -50,6 +50,10 @@ protected:
 	UPROPERTY(meta = (BindWidget))
 	class UWidgetSwitcher* PanelSwitcher;
 
+	// 창이 열릴 때의 원래 비디오 상태를 기억할 변수
+	FIntPoint CachedResolution;
+	EWindowMode::Type CachedWindowMode;
+
 private:
 
 	// 버튼 클릭 이벤트 함수

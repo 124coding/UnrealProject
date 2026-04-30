@@ -79,6 +79,9 @@ public:
 	UPROPERTY(BlueprintReadWrite, Category = "Save Data|Progress")
 	FName SavedLevelName;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Data")
+	UDataTable* DroneDataTable;
+
 	// 새로하기(New Game)를 눌렀을 때 데이터를 초기화하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Game Flow")
 	void ResetCampaignData();

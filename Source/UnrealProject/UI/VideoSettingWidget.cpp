@@ -65,7 +65,7 @@ void UVideoSettingWidget::InitVideoSettings()
 		if (!UserSettings) return;
 	}
 
-	UserSettings->LoadSettings(false);
+	UserSettings->LoadSettings(true);
 
 	// 초기 세팅
 	FIntPoint CurrentRes = UserSettings->GetScreenResolution();

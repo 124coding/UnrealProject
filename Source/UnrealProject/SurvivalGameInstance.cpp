@@ -30,7 +30,21 @@ void USurvivalGameInstance::ResetCampaignData()
 	PlayerCombatData.CarriedAmmo.Empty();
 
 	// 드론 (Drone) 데이터 초기화
-	SavedDroneStats = FDroneStats();
+	if (DroneDataTable) {
+		static const FString ContextString(TEXT("Drone Data Reset Context"));
+		FDroneStats* DefaultStats = DroneDataTable->FindRow<FDroneStats>(FName("DroneInitialStat"), ContextString);
+
+		if (DefaultStats)
+		{
+			SavedDroneStats = *DefaultStats; // 데이터 복사
+		}
+		else
+		{
+			// 행을 찾지 못했을 때의 Fallback 처리
+			SavedDroneStats = FDroneStats();
+			UE_LOG(LogTemp, Warning, TEXT("Failed to find 'Default' row in DroneDataTable!"));
+		}
+	}
 }
 
 void USurvivalGameInstance::SaveGameToDisk(int SlotIndex)

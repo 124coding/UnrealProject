@@ -40,6 +40,12 @@ void UMainSettingWidget::NativeConstruct()
 		WBP_GameplaySettings->InitGameplaySettings(CurrentSettings);
 	}
 
+	if (UGameUserSettings* UserSettings = UGameUserSettings::GetGameUserSettings())
+	{
+		CachedResolution = UserSettings->GetScreenResolution();
+		CachedWindowMode = UserSettings->GetFullscreenMode();
+	}
+
 	// 버튼에 클릭 이벤트 묶어주기
 	if (Btn_Video) Btn_Video->OnClicked.AddDynamic(this, &UMainSettingWidget::OnVideoBtnClicked);
 	if (Btn_Sound) Btn_Sound->OnClicked.AddDynamic(this, &UMainSettingWidget::OnSoundBtnClicked);
@@ -101,19 +107,37 @@ void UMainSettingWidget::OnCancelBtnClicked()
 	if (UGameplayStatics::DoesSaveGameExist(TEXT("SystemSettings"), 0))
 	{
 		CurrentSettings = Cast<USystemSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("SystemSettings"), 0));
+	}
+	else
+	{
+		// 세이브 파일이 아예 없는 경우 -> 클래스의 기본값으로 롤백 객체 생성
+		CurrentSettings = Cast<USystemSaveGame>(UGameplayStatics::CreateSaveGameObject(USystemSaveGame::StaticClass()));
+	}
 
-		if (WBP_SoundSettings) WBP_SoundSettings->InitSoundSettings(CurrentSettings);
-		if (WBP_GameplaySettings) WBP_GameplaySettings->InitGameplaySettings(CurrentSettings);
+	if (CurrentSettings)
+	{
+		if (WBP_SoundSettings)
+		{
+			WBP_SoundSettings->InitSoundSettings(CurrentSettings);
+		}
 
-		if (WBP_GameplaySettings) {
+		if (WBP_GameplaySettings)
+		{
+			WBP_GameplaySettings->InitGameplaySettings(CurrentSettings);
 			WBP_GameplaySettings->ApplyGameplaySetting();
 		}
 	}
 
-	if (UGameUserSettings* GraphicsSettings = UGameUserSettings::GetGameUserSettings()) {
-		GraphicsSettings->LoadSettings(true); // ini 파일 다시 읽어오기
-	    GraphicsSettings->ApplySettings(false); // 화면 되돌리기
-		
+	if (UGameUserSettings* GraphicsSettings = UGameUserSettings::GetGameUserSettings())
+	{
+		// 백업해둔 원래 화면 크기와 창 모드로 강제 세팅
+		GraphicsSettings->SetScreenResolution(CachedResolution);
+		GraphicsSettings->SetFullscreenMode(CachedWindowMode);
+
+		// 화면에 즉시 적용
+		GraphicsSettings->ApplySettings(false);
+
+		// UI 원상복구
 		if (WBP_VideoSettings)
 		{
 			WBP_VideoSettings->InitVideoSettings();
