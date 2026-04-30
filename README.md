@@ -8,7 +8,7 @@ Unreal Engine 5와 C++을 기반으로 개발된 1인칭 PVE 서바이벌 슈팅
 **개발 기간 & 인원:** 2026/1 ~ 2026/4 (4개월), 1인 개발  
 **핵심 역할:** 오브젝트 풀링 구현, 최적화, 인게임 로직 전반
 
-<video src="https://github.com/user-attachments/assets/38953900-a5dd-4ef9-ae70-6101a6a8f0ff" autoplay loop muted playsinline width="100%"></video>  
+<video src="https://github.com/user-attachments/assets/38953900-a5dd-4ef9-ae70-6101a6a8f0ff" muted playsinline width="100%"></video>  
 
 [[Unreal Project 시연 영상]](https://www.youtube.com/watch?v=Qs79UwB2QN0)
 
